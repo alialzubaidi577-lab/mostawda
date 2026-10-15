@@ -916,7 +916,6 @@ auth.onAuthStateChanged(async u=>{
   const w=document.createElement('div');w.className='whoami';w.innerHTML='👤 '+nm+' <button type="button">تسجيل خروج</button>';
   w.querySelector('button').onclick=()=>auth.signOut();
   if('Notification' in window&&Notification.permission!=='granted'){const nb=document.createElement('button');nb.type='button';nb.className='ntf';nb.textContent='🔔 تفعيل الإشعارات';w.appendChild(document.createElement('br'));w.appendChild(nb);nb.onclick=async()=>{const p=await Notification.requestPermission();if(p==='granted'){nb.remove();window.sysNotify('تم تفعيل الإشعارات ✅')}else nb.textContent='الإشعارات مرفوضة: فعّلها من إعدادات المتصفح'}}
-  if(key==='admin'){const r=document.createElement('button');r.type='button';r.className='rst';r.textContent='🗑 تصفير بيانات التجربة';w.appendChild(document.createElement('br'));w.appendChild(r);r.onclick=()=>resetAll(r)}
   document.body.appendChild(w);
   resolveU(u);
 });
