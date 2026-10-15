@@ -816,6 +816,10 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .band-in{position:relative}
 .rfbtn{all:unset;position:fixed;bottom:18px;left:16px;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:24px;font-weight:700;color:var(--tag-ink,#132b28);background:var(--tag);box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;z-index:900}
 .rfbtn.spin{animation:ptrs .7s linear infinite}
+.acti{display:flex;flex-direction:column;gap:2px;width:100%;text-align:right;font:inherit;color:inherit;background:none;border:0;border-bottom:1px solid var(--line);padding:7px 2px;cursor:pointer}
+.acti:active{background:color-mix(in srgb,var(--tag) 15%,transparent)}
+.acti .actt{align-self:flex-start;font-size:12px;font-weight:700;color:var(--c);border:1px solid var(--c);border-radius:999px;padding:0 8px}
+.acti .actw{font-weight:600}
 
 [hidden]{display:none!important}
 html,body{margin:0;overflow-x:hidden}
@@ -942,6 +946,9 @@ window.sysNotify=async msg=>{
   try{const r=await navigator.serviceWorker?.ready;if(r){r.showNotification('المستودع',o);return}}catch(_){}
   try{new Notification('المستودع',o)}catch(_){}
 };
+const clearNotifs=()=>{try{navigator.serviceWorker?.ready.then(r=>r.getNotifications().then(ns=>ns.forEach(n=>n.close())))}catch(_){}try{navigator.clearAppBadge&&navigator.clearAppBadge()}catch(_){}};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')clearNotifs()});
+window.addEventListener('load',clearNotifs);
 const names={};
 window.claude={use:async k=>{
   const u=await ready;
@@ -1318,7 +1325,7 @@ function loadsHtml(onlyRep){
   if(flt&&!days.length)return `<div class="lines"><div class="empty">ما حمّل شي بهذا البحث${rng?' في هذي الفترة':''}.</div></div>`;
   let sumH='';if(false){const T=new Map();for(const d of days)for(const r of d.rows){const k=r.item;let o=T.get(k);if(!o){o={item:r.item,name:r.name,q:0};T.set(k,o)}o.q+=r.q}const tot=[...T.values()].reduce((a,o)=>a+o.q,0);
     sumH=`<div class="ldsum"><div class="ldsumh"><span>${rng?'من '+(ldFrom?toDisp(ldFrom):'البداية')+' إلى '+(ldTo?toDisp(ldTo):'اليوم'):'كل الفترة'}</span><b>${fmt(Math.round(tot*1000)/1000)} كرتون</b></div><table class="tbl nldt"><tbody>${[...T.values()].sort((a,b)=>b.q-a.q).map(o=>`<tr><td class="mono">${esc(o.item)}</td><td class="nm">${esc(o.name)}</td><td class="big">${fmt(Math.round(o.q*1000)/1000)}</td></tr>`).join('')}</tbody></table></div>`}
-  const tm=t=>t?new Date(t).toLocaleTimeString('ar-SA-u-nu-latn',{hour:'numeric',minute:'2-digit'}):'';
+  const tm=t=>t?new Date(t).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'}):'';
   return (onlyRep==null?`<h3 class="ldh">سجل التحميل</h3>`:'')+days.map(d=>{const k='d|'+d.date,op=ldOpen.has(k),tot=d.rows.reduce((a,r)=>a+r.q,0);
     return `<button type="button" class="swday${op?' open':''}" data-ldk="${esc(k)}"><span>${op?'▾':'◂'} ${toDisp(d.date)}</span><small>${new Set(d.rows.map(r=>r.item)).size} صنف · ${fmt(Math.round(tot*1000)/1000)} كرتون${d.at?' · '+tm(d.at):''}</small></button>`+
     (op&&onlyRep==null?nearDayTbl(d):op?`<div class="daybody"><div class="tbl-wrap"><table class="tbl dist ldlog ldlog3"><thead><tr><th>الصنف</th><th>حمّل</th><th></th></tr></thead><tbody>${(()=>{const G=new Map();for(const r of d.rows){const gk=r.item+'|'+(r.expiry||'');let o=G.get(gk);if(!o){o={...r,tot:0,ls:[]};G.set(gk,o)}o.tot+=r.q;o.ls.push(r)}
@@ -1705,7 +1712,7 @@ let whOpen=true;
 function whDaysHtml(rows){
   const cDays=[...new Set(entries.filter(e=>e.type==='wh'&&isPosted(e)&&inMonth(e)).map(eDate))];if(!cDays.includes(whDate))cDays.push(whDate);cDays.sort().reverse();
   const btn=d=>{const E=entries.filter(e=>e.type==='wh'&&isPosted(e)&&eDate(e)===d),n=new Set(E.map(e=>e.item)).size,t=E.reduce((m,e)=>Math.max(m,e.at||0),0),op=d===whDate&&whOpen;
-    return `<button type="button" class="swday${op?' open':''}" data-whday="${d}"><span>${op?'▾':'◂'} ${toDisp(d)}${d===iso(Date.now())?' · اليوم':''}</span><small>${n} صنف${t?' · آخر جرد '+new Date(t).toLocaleTimeString('ar-SA-u-nu-latn',{hour:'numeric',minute:'2-digit'}):''}</small></button>`};
+    return `<button type="button" class="swday${op?' open':''}" data-whday="${d}"><span>${op?'▾':'◂'} ${toDisp(d)}${d===iso(Date.now())?' · اليوم':''}</span><small>${n} صنف${t?' · آخر جرد '+new Date(t).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'}):''}</small></button>`};
   const idx=cDays.indexOf(whDate);
   return cDays.slice(0,idx+1).map(btn).join('')+(whOpen?`<div class="daybody">${rows.length?whCards(rows):'<div class="lines"><div class="empty">ما فيه جرد في هذا التاريخ. ابحث عن صنف وسجّله.</div></div>'}</div>`:'')+cDays.slice(idx+1).map(btn).join('');
 }
@@ -1839,7 +1846,7 @@ function renderSim(rows,rows0){
   const nd=o=>o.rows.reduce((x,r)=>x+(r.d||0),0);
   const cDays=[...new Set(entries.filter(e=>e.type==='wh'&&isPosted(e)&&inMonth(e)).map(eDate))];if(!cDays.includes(whDate))cDays.push(whDate);cDays.sort().reverse();
   const simDays=before=>{const idx=cDays.indexOf(whDate);const L=before?cDays.slice(0,idx+1):cDays.slice(idx+1);return L.map(d=>{const E=entries.filter(e=>e.type==='wh'&&isPosted(e)&&eDate(e)===d),t=E.reduce((m,e)=>Math.max(m,e.at||0),0),op=d===whDate&&resOpen;
-    return `<button type="button" class="swday${op?' open':''}" data-rday="${d}"><span>${op?'▾':'◂'} ${toDisp(d)}</span><small>${op?list.length+' منتج متداخل':''}${t?(op?' · ':'')+'جرد '+new Date(t).toLocaleTimeString('ar-SA-u-nu-latn',{hour:'numeric',minute:'2-digit'}):''}</small></button>`}).join('')};
+    return `<button type="button" class="swday${op?' open':''}" data-rday="${d}"><span>${op?'▾':'◂'} ${toDisp(d)}</span><small>${op?list.length+' منتج متداخل':''}${t?(op?' · ':'')+'جرد '+new Date(t).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'}):''}</small></button>`}).join('')};
   const adj=new Map();for(const w of swaps)if(w.kind==='swap'&&w.to&&w.from&&w.date>=whDate){adj.set(w.from.item,(adj.get(w.from.item)||0)+(Number(w.q)||0));adj.set(w.to.item,(adj.get(w.to.item)||0)-(Number(w.q)||0))}
   const aft=r=>Math.round(((r.d||0)+(adj.get(r.it.item)||0))*1000)/1000;const fixed=o=>o.rows.some(r=>adj.has(r.it.item))&&!(o.rows.some(r=>aft(r)>0.0005)&&o.rows.some(r=>aft(r)<-0.0005));
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>
@@ -1849,7 +1856,7 @@ function renderSim(rows,rows0){
       const W=o.rows.map(r=>r.it.name.split(/\s+/).filter(Boolean));const common=W[0].filter(w=>!sz(w)&&W.every(ws=>ws.some(x=>norm(x)===norm(w))));
       const size=(W[0].find(sz)||'');const fl=r=>{const f=r.it.name.split(/\s+/).filter(w=>w&&!sz(w)&&!common.some(c=>norm(c)===norm(w))).join(' ');return f||r.it.name};
       const title=(common.join(' ')||o.name)+(size?' '+size:'');
-      return `<div class="stk grp${fx?' fixed':''}"><div class="grph"><b>${fx?'✓':'🔄'} ${esc(title)}</b><span class="hint">الصافي <b class="${dcls(n)}">${dtxt(Math.round(n*1000)/1000)}</b></span></div>${(()=>{const its=new Set(o.rows.map(r=>r.it.item));const L=swaps.filter(w=>w.kind==='swap'&&w.to&&w.from&&w.date>=whDate&&(its.has(w.from.item)||its.has(w.to.item)));if(!L.length)return'';const last=L.reduce((m,w)=>(w.at||0)>(m.at||0)?w:m,L[0]);const when=toDisp(last.date)+(last.at?' · '+new Date(last.at).toLocaleTimeString('ar-SA-u-nu-latn',{hour:'numeric',minute:'2-digit'}):'');return fx?`<div class="fxnote">✓ تم التصحيح<small>آخر تصحيح ${when}</small></div>`:`<div class="fxnote part">◐ تصحيح جزئي<small>آخر تصحيح ${when}</small></div>`})()}
+      return `<div class="stk grp${fx?' fixed':''}"><div class="grph"><b>${fx?'✓':'🔄'} ${esc(title)}</b><span class="hint">الصافي <b class="${dcls(n)}">${dtxt(Math.round(n*1000)/1000)}</b></span></div>${(()=>{const its=new Set(o.rows.map(r=>r.it.item));const L=swaps.filter(w=>w.kind==='swap'&&w.to&&w.from&&w.date>=whDate&&(its.has(w.from.item)||its.has(w.to.item)));if(!L.length)return'';const last=L.reduce((m,w)=>(w.at||0)>(m.at||0)?w:m,L[0]);const when=toDisp(last.date)+(last.at?' · '+new Date(last.at).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'}):'');return fx?`<div class="fxnote">✓ تم التصحيح<small>آخر تصحيح ${when}</small></div>`:`<div class="fxnote part">◐ تصحيح جزئي<small>آخر تصحيح ${when}</small></div>`})()}
       <table class="tbl simt"><thead><tr><th>الكود</th><th>النكهة</th><th>الفرق</th>${hasAdj?'<th>بعد التصحيح</th>':''}</tr></thead><tbody>${o.rows.map(r=>`<tr><td class="mono">${esc(r.it.item)}</td><td>${esc(fl(r))}</td><td class="big ${dcls(r.d)}">${dtxt(r.d)}</td>${hasAdj?`<td class="big ${dcls(aft(r))}">${Math.abs(aft(r))<0.0005?'✓ 0':dtxt(aft(r))}</td>`:''}</tr>`).join('')}</tbody></table>
 </div>`}).join('')}</div>`
       :'<div class="lines"><div class="empty">ما فيه أصناف متشابهة فيها زيادة ونقص مع بعض.</div></div>')+`</div>`:''}${simDays(0)}
@@ -1878,10 +1885,10 @@ function renderResult(){
   const plus=rows.filter(r=>r.d>0.001),minus=rows.filter(r=>r.d<-0.001),noPrice=rows.filter(r=>r.a!=null&&r.p==null).length;
   const sv=a=>a.reduce((x,r)=>x+(r.vd||0),0);
   const cell=(l,v,c='')=>`<div><span>${l}</span><b class="${c}">${v}</b></div>`;
-  const cTime=item=>{const t=entries.filter(e=>e.type==='wh'&&isPosted(e)&&e.item===item&&eDate(e)===whDate).reduce((m,e)=>Math.max(m,e.at||0),0);return t?new Date(t).toLocaleTimeString('ar-SA-u-nu-latn',{hour:'numeric',minute:'2-digit'}):''};
+  const cTime=item=>{const t=entries.filter(e=>e.type==='wh'&&isPosted(e)&&e.item===item&&eDate(e)===whDate).reduce((m,e)=>Math.max(m,e.at||0),0);return t?new Date(t).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'}):''};
   const cDays=[...new Set(entries.filter(e=>e.type==='wh'&&isPosted(e)&&inMonth(e)).map(eDate))];if(!cDays.includes(whDate))cDays.push(whDate);cDays.sort().reverse();
   const dayBtns=before=>{const idx=cDays.indexOf(whDate);const L=before?cDays.slice(0,idx+1):cDays.slice(idx+1);return L.map(d=>{const E=entries.filter(e=>e.type==='wh'&&isPosted(e)&&eDate(e)===d),n=new Set(E.map(e=>e.item)).size,t=E.reduce((m,e)=>Math.max(m,e.at||0),0),op=d===whDate&&resOpen;
-    return `<button type="button" class="swday${op?' open':''}" data-rday="${d}"><span>${op?'▾':'◂'} ${toDisp(d)}</span><small>${n} صنف${t?' · آخر جرد '+new Date(t).toLocaleTimeString('ar-SA-u-nu-latn',{hour:'numeric',minute:'2-digit'}):''}</small></button>`}).join('')};
+    return `<button type="button" class="swday${op?' open':''}" data-rday="${d}"><span>${op?'▾':'◂'} ${toDisp(d)}</span><small>${n} صنف${t?' · آخر جرد '+new Date(t).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'}):''}</small></button>`}).join('')};
   const rowCard=r=>`<div class="stk${linkMode?' pick':''}${linkSel.has(r.it.item)?' picked':''}" data-pick="${esc(r.it.item)}"><div class="stkh">${!linkMode&&resMode==='cnt'&&cTime(r.it.item)?`<input type="checkbox" class="selbx" data-rsel="${esc(r.it.item)}"${resSel.has(r.it.item)?' checked':''} aria-label="تحديد">`:''}<span class="icode">${esc(r.it.item)}</span><span class="iname">${esc(r.it.name)}</span>${cTime(r.it.item)?`<span class="ctime">🕒 ${cTime(r.it.item)}</span>`:''}</div>
       <div class="stkg g3w">${cell('الفعلي',fmt(r.b))}${cell('الجرد',r.a!=null?fmt(r.a):'—')}${cell('الفرق',dtxt(r.d),dcls(r.d))}${cell('سعر الكرتون',r.p!=null?money(r.p):'—')}${cell('قيمة الفرق',r.vd!=null&&Math.abs(r.vd)>0.004?(r.vd>0?'+':'')+money(r.vd):'—',dcls(r.vd))}${cell('مع الضريبة 15%',r.vd!=null&&Math.abs(r.vd)>0.004?(r.vd>0?'+':'')+money(r.vd*1.15):'—',dcls(r.vd))}</div>${refHint(r.it.item)}</div>`;
   const vfmt=v=>Math.abs(v)>0.004?(v>0?'+':'')+money(v):'0.00';
@@ -1934,7 +1941,7 @@ function renderCustomers(){
   $('#cForm').onsubmit=async e=>{e.preventDefault();const code=toLatin($('#cc').value.trim()),name=$('#cn').value.trim();
     if(!name){status('اكتب اسم العميل.',true);return}
     if(code&&customers.some(c=>c.code===code)){status('رقم العميل '+code+' موجود من قبل.',true);return}
-    try{await store.set('customers',code?cid(code):'n'+Date.now(),{code,name,at:Date.now()});$('#cc').value='';$('#cn').value='';toast('أضفت: '+name)}catch(err){status('ما انضاف. حاول مرة ثانية.',true)}};
+    try{await store.set('customers',code?cid(code):'n'+Date.now(),{code,name,at:Date.now(),by:myId||''});$('#cc').value='';$('#cn').value='';toast('أضفت: '+name)}catch(err){status('ما انضاف. حاول مرة ثانية.',true)}};
   $('#impCust').onchange=importCustomers;
   $('#cLines').onclick=async e=>{const ln=e.target.closest('[data-cid]');if(!ln)return;const c=customers.find(x=>x.id===ln.dataset.cid);
     if(e.target.matches('[data-ced]')){ln.innerHTML=`<td colspan="5"><form class="inl" data-cform><input id="ecc" value="${esc(c.code||'')}" aria-label="رقم العميل" style="width:80px"><input id="ecn" value="${esc(c.name)}" aria-label="اسم العميل"><button class="btn sm" type="submit">حفظ</button><button class="btn ghost sm" type="button" data-x>إلغاء</button></form></td>`;$('#ecn').focus();return}
@@ -1995,7 +2002,7 @@ async function importCustomers(e){
   try{const rows=await readSheet(f);let n=0,u=0;status('أستورد العملاء…');
     for(const r of rows){const code=toLatin(col(r,'رقم العميل','رقم','كود','code','customer')),name=col(r,'اسم العميل','الاسم','اسم','name');if(!name)continue;
       const ex=code?customers.find(c=>c.code===code):null;
-      if(ex){if(ex.name!==name){await store.update('customers',ex.id,{name});u++}}else{await store.set('customers',code?cid(code):'n'+Date.now()+n,{code,name,at:Date.now()});n++}
+      if(ex){if(ex.name!==name){await store.update('customers',ex.id,{name});u++}}else{await store.set('customers',code?cid(code):'n'+Date.now()+n,{code,name,at:Date.now(),by:myId||''});n++}
       if((n+u)%20===0)status('أستورد… '+(n+u));}
     status('');toast(`انضاف ${n} عميل، وتحدّث ${u}`);
   }catch(err){status('ما قدرت أقرأ الملف. تأكد إن فيه عمود «اسم العميل».',true)}
@@ -2145,14 +2152,14 @@ const store={
 function localChanged(c){if(c==='voices')return;apply(c,local[c].map(x=>({...x})))}
 function apply(c,docs){
   if(c==='entries'){notifyNew('e',docs);entries=docs.sort((a,b)=>b.at-a.at);if(editing&&!entries.some(e=>e.id===editing)&&editEntry)closeCard();resolveNames()}
-  if(c==='customers'){customers=docs.sort((a,b)=>(a.code||'').localeCompare(b.code||'',undefined,{numeric:true})||a.name.localeCompare(b.name,'ar'));
+  if(c==='customers'){notifyNew('c',docs);setTimeout(resolveNames,0);customers=docs.sort((a,b)=>(a.code||'').localeCompare(b.code||'',undefined,{numeric:true})||a.name.localeCompare(b.name,'ar'));
     if(cust){const x=customers.find(y=>y.id===cust.id);if(x&&(x.name!==cust.name||(x.code||'')!==(cust.code||'')))setCust({id:x.id,code:x.code||'',name:x.name})}
     if(!$('#sheet').hidden)drawCust()}
   if(c==='items'){overrides=new Map(docs.map(d=>[d.item,d]))}
   if(c==='applies'){applies=docs.sort((a,b)=>b.at-a.at)}
   if(c==='groups'){groups=docs.sort((a,b)=>a.at-b.at)}
   if(c==='swaps'){swaps=docs.sort((a,b)=>b.at-a.at)}
-  if(c==='loads'){notifyNew('l',docs);loads=docs.sort((a,b)=>b.at-a.at);if((view==='load'||view==='near'&&nearDist)&&document.activeElement?.classList.contains('ldq'))return}
+  if(c==='loads'){notifyNew('l',docs);loads=docs.sort((a,b)=>b.at-a.at);resolveNames();if((view==='load'||view==='near'&&nearDist)&&document.activeElement?.classList.contains('ldq'))return}
   if(c==='settings'){const r=docs.find(d=>d.id==='reps');if(r&&Array.isArray(r.names))repNames=r.names;distOv=docs.find(d=>d.id==='dist')?.ov||{};if(view==='load')renderLoad();if(view==='near'&&nearDist&&!document.activeElement?.closest('.repnames'))renderLog();return}
   if(!loaded)return;
   if(c==='items')rebuildCo();else $('#dbInfo').textContent=coItems.length+' صنف شركة · '+customers.length+' عميل';
@@ -2171,7 +2178,7 @@ function refresh(){
   renderLog();
 }
 async function resolveNames(){
-  if(!user)return;const ids=[...new Set(entries.map(c=>c.by).filter(Boolean))].filter(i=>!(i in names));if(!ids.length)return;
+  if(!user)return;const ids=[...new Set([...entries,...loads,...customers].map(c=>c.by).filter(Boolean))].filter(i=>!(i in names));if(!ids.length)return;
   try{const ps=await user.profiles(ids);for(const i of ids)names[i]=ps?.[i]?.name||'';if(view!=='home')refresh()}catch(e){}
 }
 (async()=>{
@@ -2228,10 +2235,10 @@ document.addEventListener('change',async e=>{const i=e.target.closest('[data-rna
   try{await store.set('settings','reps',{names:repNames,at:Date.now()})}catch(_){}renderLog()});
 
 // ---------- notifications ----------
-const seenIds={e:null,l:null};
+const seenIds={e:null,l:null,c:null};
 const TYPE_AR={wh:'جرد',ret:'مرتجع',exp:'إكسباير',near:'تاريخ قريب'};
 function whoName(id){return (names&&names[id])||'أمين المستودع'}
-function actText(x,k){return k==='l'?`تحميل ${repNames[x.rep]||x.repName||''} · ${fmt((x.items||[]).reduce((a,i)=>a+(Number(i.q)||0),0))} كرتون`:`${TYPE_AR[x.type]||'سطر'} · ${x.name||x.item} · ${fmt(x.qty)}${x.unit&&x.unit!=='كرتون'?' '+x.unit:''}`}
+function actText(x,k){if(k==='c')return 'عميل جديد · '+(x.code?x.code+' · ':'')+(x.name||'');return k==='l'?`تحميل ${repNames[x.rep]||x.repName||''} · ${fmt((x.items||[]).reduce((a,i)=>a+(Number(i.q)||0),0))} كرتون`:`${TYPE_AR[x.type]||'سطر'} · ${x.name||x.item} · ${fmt(x.qty)}${x.unit&&x.unit!=='كرتون'?' '+x.unit:''}`}
 let audioCtx=null;
 function beep(){try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();const t=audioCtx.currentTime;[0,.18].forEach((d,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=i?1320:880;g.gain.setValueAtTime(.0001,t+d);g.gain.exponentialRampToValueAtTime(.3,t+d+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d+.16);o.connect(g).connect(audioCtx.destination);o.start(t+d);o.stop(t+d+.18)});try{navigator.vibrate?.(120)}catch(_){}}catch(_){}}
 document.addEventListener('pointerdown',()=>{try{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume?.()}catch(_){}},{once:true});
@@ -2244,13 +2251,21 @@ function notifyNew(k,docs){
   if(view==='home')setTimeout(renderHome,50);
 }
 function seenAt(){try{return Number(localStorage.getItem('seenAt')||0)}catch(_){return 0}}
+const ACT_META={wh:['📦','جرد','--t-wh'],ret:['↩','مرتجع','--t-ret'],exp:['📅','إكسباير','--t-exp'],near:['⏱','تاريخ قريب','--t-exp'],l:['🚚','تحميل','--t-exp'],c:['👤','عميل جديد','--muted']};
 function activityHtml(){
   const since=seenAt()||Date.now()-86400000;
-  const acts=[...entries.filter(e=>e.by&&e.by!==myId&&e.at>since).map(x=>({x,k:'e',at:x.at})),...loads.filter(l=>l.by&&l.by!==myId&&l.at>since).map(x=>({x,k:'l',at:x.at}))].sort((a,b)=>b.at-a.at);
+  const acts=[...entries.filter(e=>e.by&&e.by!==myId&&e.at>since).map(x=>({x,k:'e',at:x.at})),...loads.filter(l=>l.by&&l.by!==myId&&l.at>since).map(x=>({x,k:'l',at:x.at})),...customers.filter(c=>c.by&&c.by!==myId&&(c.at||0)>since).map(x=>({x,k:'c',at:x.at}))].sort((a,b)=>b.at-a.at);
   if(!acts.length)return'';
   return `<div class="actbox"><div class="acth"><b>🔔 جديد من المستودع (${acts.length})</b><button class="btn ghost sm" type="button" id="actSeen">تم ✔</button></div>
-    <div class="actl">${acts.slice(0,15).map(({x,k,at})=>`<div class="acti"><span>${esc(actText(x,k))}</span><small>${esc(whoName(x.by))} · ${new Date(at).toLocaleString('ar-SA-u-nu-latn',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})}</small></div>`).join('')}</div></div>`;
+    <div class="actl">${acts.slice(0,30).map(({x,k,at})=>{const m=ACT_META[k==='e'?x.type:k]||['•','','--muted'];
+      const what=k==='c'?((x.code?x.code+' · ':'')+(x.name||'')):k==='l'?((repNames[x.rep]||x.repName||'')+' · '+fmt((x.items||[]).reduce((a,i)=>a+(Number(i.q)||0),0))+' كرتون'):((x.name||x.item)+' · '+fmt(x.qty)+(x.unit&&x.unit!=='كرتون'?' '+x.unit:'')+(x.type==='ret'&&x.custName?' · '+x.custName:''));
+      return `<button type="button" class="acti" data-act="${k}|${esc(x.id)}"><span class="actt" style="--c:var(${m[2]})">${m[0]} ${m[1]}</span><span class="actw">${esc(what)}</span><small>${esc(whoName(x.by))} · ${new Date(at).toLocaleString('ar-SA-u-nu-latn-ca-gregory',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})} ←</small></button>`}).join('')}</div></div>`;
 }
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const [k,id]=b.dataset.act.split('|');
+  if(k==='c')return go('customers');if(k==='l')return go('load');
+  const x=entries.find(y=>y.id===id);if(!x)return;const d=eDate(x);ym=d.slice(0,7);
+  if(x.type==='wh'){whDate=d;return go('wh')}if(x.type==='ret'){custFilter=x.custName||'';return go('retlist')}
+  go(x.type==='near'?'near':'exp')});
 document.addEventListener('click',e=>{if(e.target.id==='actSeen'){try{localStorage.setItem('seenAt',String(Date.now()))}catch(_){}renderHome()}});
 
 // ---------- flavor swap ----------
@@ -2272,7 +2287,7 @@ function swRow(x){const who=esc(partyName(x));let a='—',b='—',t='';
   if(x.kind==='swap'&&x.to){const sp=splitNames(x.from?.name,x.to.name);a=`<span class="neg">${esc(sp.a)}</span>`;b=`<span class="pos">${esc(sp.b)}</span>`;t=sp.title}
   else if(x.from){a=esc(x.from.name);b='<span class="warn">📝 ملاحظة</span>'}else b='<span class="warn">📝 ملاحظة</span>';
   const note=x.text||x.voice?`<tr class="swnr"><td colspan="6">📝 ${esc(x.text||'')}${x.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(x.id)}">▶ صوت</button>`:''}</td></tr>`:'';
-  return `<tr class="${note?'hasnote':''}"><td class="who ${ptCls(x)}">${who}<div class="swtime">${x.at?new Date(x.at).toLocaleTimeString('ar-SA-u-nu-latn',{hour:'numeric',minute:'2-digit'}):''}</div></td><td>${a}${t?`<div class="hint">${esc(t)}</div>`:''}</td><td class="hint">←</td><td>${b}</td><td class="big">${x.q?fmt(x.q):'—'}</td><td><button class="btn danger sm" type="button" data-swdel="${esc(x.id)}">🗑</button></td></tr>${note}`}
+  return `<tr class="${note?'hasnote':''}"><td class="who ${ptCls(x)}">${who}<div class="swtime">${x.at?new Date(x.at).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'}):''}</div></td><td>${a}${t?`<div class="hint">${esc(t)}</div>`:''}</td><td class="hint">←</td><td>${b}</td><td class="big">${x.q?fmt(x.q):'—'}</td><td><button class="btn danger sm" type="button" data-swdel="${esc(x.id)}">🗑</button></td></tr>${note}`}
 function swCard(x){const nm=esc(partyName(x));
   let mid='';
   if(x.kind==='swap'&&x.to){const sp=splitNames(x.from?.name,x.to.name);mid=`<div class="swt">${esc(sp.title)}</div><div class="swflow"><span class="neg">${esc(sp.a)}</span><span class="arr">←</span><span class="pos">${esc(sp.b)}</span></div>`}
