@@ -832,6 +832,8 @@ html,body{margin:0;overflow-x:hidden}
 #lgn.wait form{display:none}
 #lgn.wait::after{content:"جاري التحميل…";color:var(--muted)}
 .whoami{max-width:680px;margin:28px auto 90px;padding:0 16px;text-align:center;color:var(--muted);font-size:13px}
+.whoami .ntf{margin-top:14px;background:var(--tag);color:var(--tag-ink);border:0;font-weight:700;padding:8px 16px}
+.whoami .rst{margin-top:14px;border-color:var(--bad);color:var(--bad);font-weight:600}
 .whoami button{font:inherit;font-size:13px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:4px 12px;margin-inline-start:8px;cursor:pointer}
 </style>
 </head>
@@ -839,9 +841,8 @@ html,body{margin:0;overflow-x:hidden}
 
 <div id="lgn" class="wait"><form id="lgnF" autocomplete="on">
   <h2>إدارة المستودع</h2>
-  <p>سجّل دخولك</p>
-  <div><label for="lgU">اسم الدخول</label><input id="lgU" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="admin" required></div>
-  <div><label for="lgP">كلمة المرور</label><input id="lgP" type="password" autocomplete="current-password" required></div>
+  <p>اكتب كلمة المرور حقتك</p>
+  <div><label for="lgP">كلمة المرور</label><input id="lgP" type="password" inputmode="text" autocomplete="current-password" required autofocus></div>
   <div class="err" id="lgE"></div>
   <button id="lgB" type="submit">دخول</button>
 </form></div>
@@ -893,6 +894,19 @@ async function seedOnce(){
   for(const c in SEED)for(const id in SEED[c]){b.set(fdb.collection(c).doc(id),SEED[c][id]);if(++n%400===0){await b.commit();b=fdb.batch()}}
   b.set(f,{at:Date.now()});await b.commit();
 }
+async function resetAll(btn){
+  if(!confirm('بيمسح كل الجرد والمرتجعات والإكسباير والتحميل والتصحيحات، ويصفّر المخزون.\nالعملاء والأصناف والأسعار والطبالي والمناديب تبقى.\n\nمتأكد؟'))return;
+  if(prompt('للتأكيد اكتب: تصفير')!=='تصفير')return;
+  btn.disabled=true;btn.textContent='جاري التصفير…';
+  try{
+    const refs=[];
+    for(const c of ['entries','loads','swaps','applies','voices']){const q=await fdb.collection(c).get();q.forEach(d=>refs.push(['d',d.ref]))}
+    refs.push(['d',fdb.collection('settings').doc('dist')]);
+    const it=await fdb.collection('items').get();it.forEach(d=>{if(d.data().stock)refs.push(['u',d.ref])});
+    for(let i=0;i<refs.length;i+=400){const b=fdb.batch();for(const [t,r] of refs.slice(i,i+400)){if(t==='d')b.delete(r);else b.update(r,{stock:0})}await b.commit()}
+    alert('تم التصفير ✅');location.reload();
+  }catch(e){alert('ما كمل التصفير، حاول مرة ثانية');btn.disabled=false;btn.textContent='🗑 تصفير بيانات التجربة'}
+}
 auth.onAuthStateChanged(async u=>{
   if(!u){if(had)return location.reload();L.classList.remove('wait');L.hidden=false;return}
   had=true;L.hidden=true;
@@ -900,16 +914,34 @@ auth.onAuthStateChanged(async u=>{
   try{await fdb.collection('profiles').doc(u.uid).set({name:nm,email:u.email||'',at:Date.now()},{merge:true})}catch(e){}
   if(key==='admin'){try{await seedOnce()}catch(e){console.warn(e)}}
   const w=document.createElement('div');w.className='whoami';w.innerHTML='👤 '+nm+' <button type="button">تسجيل خروج</button>';
-  w.querySelector('button').onclick=()=>auth.signOut();document.body.appendChild(w);
+  w.querySelector('button').onclick=()=>auth.signOut();
+  if('Notification' in window&&Notification.permission!=='granted'){const nb=document.createElement('button');nb.type='button';nb.className='ntf';nb.textContent='🔔 تفعيل الإشعارات';w.appendChild(document.createElement('br'));w.appendChild(nb);nb.onclick=async()=>{const p=await Notification.requestPermission();if(p==='granted'){nb.remove();window.sysNotify('تم تفعيل الإشعارات ✅')}else nb.textContent='الإشعارات مرفوضة: فعّلها من إعدادات المتصفح'}}
+  if(key==='admin'){const r=document.createElement('button');r.type='button';r.className='rst';r.textContent='🗑 تصفير بيانات التجربة';w.appendChild(document.createElement('br'));w.appendChild(r);r.onclick=()=>resetAll(r)}
+  document.body.appendChild(w);
   resolveU(u);
 });
 document.getElementById('lgnF').onsubmit=async e=>{
   e.preventDefault();const B=document.getElementById('lgB'),E=document.getElementById('lgE');
-  let v=document.getElementById('lgU').value.trim().toLowerCase();if(!v.includes('@'))v+=DOM;
-  B.disabled=true;E.textContent='';
-  try{await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);await auth.signInWithEmailAndPassword(v,document.getElementById('lgP').value)}
-  catch(err){E.textContent=/network/.test(err.code||'')?'ما فيه إنترنت، حاول مرة ثانية':'اسم الدخول أو كلمة المرور غلط'}
-  B.disabled=false;
+  const nd=x=>x.replace(/[٠-٩]/g,c=>'٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/[۰-۹]/g,c=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(c));
+  const pw=nd(document.getElementById('lgP').value).trim();if(!pw)return;
+  let last='';try{last=localStorage.getItem('lastUser')||''}catch(_){}
+  const order=[...new Set([last,...Object.keys(NAMES)].filter(Boolean))];
+  B.disabled=true;E.textContent='';B.textContent='جاري الدخول…';
+  try{await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)}catch(_){}
+  let ok=false,net=false,many=false;
+  for(const k of order){
+    try{await auth.signInWithEmailAndPassword(k+DOM,pw);ok=true;try{localStorage.setItem('lastUser',k)}catch(_){}break}
+    catch(err){const c=err.code||'';if(/network/.test(c)){net=true;break}if(/too-many/.test(c)){many=true;break}}
+  }
+  if(!ok)E.textContent=net?'ما فيه إنترنت، حاول مرة ثانية':many?'محاولات كثيرة، انتظر دقيقة وحاول':'كلمة المرور غلط';
+  B.disabled=false;B.textContent='دخول';
+};
+window.sysNotify=async msg=>{
+  try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(_){}
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const o={body:msg,icon:'icon-192.png',badge:'icon-192.png',tag:'wh'+Date.now(),vibrate:[200,100,200],renotify:true};
+  try{const r=await navigator.serviceWorker?.ready;if(r){r.showNotification('المستودع',o);return}}catch(_){}
+  try{new Notification('المستودع',o)}catch(_){}
 };
 const names={};
 window.claude={use:async k=>{
@@ -1983,15 +2015,17 @@ function parseItemRow(r){
   return out;
 }
 async function applyItemRows(parsed){
-  let n=0,u=0,i=0;
+  let n=0,u=0,i=0;const W=[];
   for(const p of parsed){
     const it=coItems.find(x=>x.item===p.no);if(!it&&!p.name)continue;
     const o=overrides.get(p.no)||{},price={...(o.price||{}),...p.price},conv={...(o.conv||{}),...p.conv},bcs=[...(o.bcs||[])];
     for(const b of p.bcs)if(!bcs.some(x=>x.bc===b.bc))bcs.push(b);
     const doc={...o,item:p.no,price,conv,bcs};if(p.name&&(!it||it.isNew||o.name))doc.name=p.name;if(!it&&p.name)doc.name=p.name;if(p.stock!=null)doc.stock=p.stock;if(p.ppl)doc.ppl=p.ppl;
-    await store.set('items','i'+String(p.no).replace(/[^A-Za-z0-9_-]/g,'_'),doc);it?u++:n++;
-    if(++i%10===0)status('أحفظ… '+i+' من '+parsed.length);
+    W.push(['i'+String(p.no).replace(/[^A-Za-z0-9_-]/g,'_'),doc]);it?u++:n++;
   }
+  if(db&&db.batch){
+    for(let k=0;k<W.length;k+=400){const b=db.batch();for(const [id,d] of W.slice(k,k+400))b.set(db.collection('items').doc(id),d);status('أحفظ… '+Math.min(k+400,W.length)+' من '+W.length);await b.commit()}
+  }else{for(const [id,d] of W){await store.set('items',id,d);if(++i%10===0)status('أحفظ… '+i+' من '+W.length)}}
   status('');return{n,u};
 }
 async function importItems(e){
@@ -2207,7 +2241,7 @@ function notifyNew(k,docs){
   if(seenIds[k]===null){seenIds[k]=ids;return}
   const fresh=docs.filter(d=>!seenIds[k].has(d.id)&&d.by&&d.by!==myId&&Date.now()-(d.at||0)<10*60000);
   seenIds[k]=ids;if(!fresh.length)return;
-  beep();toast('🔔 '+whoName(fresh[0].by)+': '+actText(fresh[0],k)+(fresh.length>1?` (+${fresh.length-1})`:''));
+  const _msg=whoName(fresh[0].by)+': '+actText(fresh[0],k)+(fresh.length>1?` (+${fresh.length-1})`:'');beep();toast('🔔 '+_msg);try{window.sysNotify&&window.sysNotify(_msg)}catch(_){}
   if(view==='home')setTimeout(renderHome,50);
 }
 function seenAt(){try{return Number(localStorage.getItem('seenAt')||0)}catch(_){return 0}}
