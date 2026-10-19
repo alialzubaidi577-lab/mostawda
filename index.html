@@ -2130,10 +2130,10 @@ function recordVoice(onBlob){
     bar.querySelector('.recsave').onclick=()=>{au.pause();bar.remove();onBlob(blob)};
     bar.querySelector('.wadel').onclick=()=>{au.pause();bar.remove()}};
   if(!navigator.mediaDevices||!window.MediaRecorder){bar.remove();toast('التسجيل ما يشتغل على هالمتصفح، جرب كروم أو سفاري');return}
-  navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{
+  navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}}).then(s=>{
     stream=s;
     const mt=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t=>MediaRecorder.isTypeSupported?.(t))||'';
-    rec=new MediaRecorder(s,mt?{mimeType:mt}:{});
+    rec=new MediaRecorder(s,mt?{mimeType:mt,audioBitsPerSecond:64000}:{audioBitsPerSecond:64000});
     rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
     rec.onstop=()=>finish(new Blob(chunks,{type:rec.mimeType||mt||'audio/webm'}));
     rec.start();
