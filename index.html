@@ -2342,7 +2342,7 @@ function logTable(rows){
     const crow=c=>`<tr class="trow${editing===c.id?' editing':''}${reqOpen(c.id)?' reqrow':''}" data-id="${esc(c.id)}"><td class="mono">${esc(c.item)}</td><td class="nm">${esc(c.name)}${seenTick(c)}</td><td class="big">${fmt(c.qty)}${c.unit!=='كرتون'?' '+esc(c.unit):''}</td><td>${c.expiry?toDisp(c.expiry):'—'}</td><td class="rs">${esc(reasonText(c))}${c.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(c.id)}">▶</button>`:''}</td><td class="acts">${actsBtns(c)}</td></tr>`;
     return`<div class="cacc">${[...g.values()].map(x=>{const op=openCust.has(x.id)||g.size===1;const car=x.rows.reduce((a,c)=>a+(c.cartons||0),0),last=x.rows.map(eDate).sort().pop(),noExp=x.rows.filter(c=>!c.expiry).length;
       return`<div class="cblock${op?' open':''}"><button type="button" class="chead" data-cg="${esc(x.id)}"><span class="arw">${op?'▲':'▼'}</span><span class="cn"><b>${esc(x.name)}</b><small>${x.code?'رقم '+esc(x.code):'بدون رقم'} · ${new Set(x.rows.map(eDate)).size} دفعة · آخر مرتجع ${toDisp(last)}${noExp?` · <i>${noExp} بدون تاريخ انتهاء</i>`:''}</small></span><span class="cv"><b>${new Set(x.rows.map(c=>c.item)).size}</b><small>صنف</small></span><span class="cv"><b>${fmt(car)}</b><small>كرتون</small></span></button>
-        ${op?`<button type="button" class="btn ghost sm" data-retrep="${esc(x.rows.map(c=>c.id).join(','))}" style="margin:6px 0 0 12px">↩ يرجعني للبلاغ</button>`:''}
+        ${op?`<button type="button" class="btn ghost sm" data-retrep="${esc(x.rows.map(c=>c.id).join(','))}" style="margin:6px 0 0 12px">↩ يرجعني للبلاغ</button>`:''}${op?`<button type="button" class="btn ghost sm" data-retnear="1" style="margin:6px 12px 0 0">↪ يرجعني للتواريخ القريبة</button>`:''}
         ${op?`<div class="tbl-wrap cbody"><table class="tbl ctbl"><thead><tr>${CH.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${byDate(x.rows).map(([d,rs])=>`<tr class="dgrp"><td colspan="6">📅 مرتجع ${toDisp(d)} · ${new Set(rs.map(c=>c.item)).size} صنف · ${fmt(rs.reduce((a,c)=>a+(c.cartons||0),0))} كرتون</td></tr>`+rs.map(crow).join('')).join('')}</tbody></table></div>`:''}</div>`}).join('')}</div>`;
   }else body=rows.map(rowFn).join('');
   const sumAmt=rows.reduce((a,c)=>a+(c.amount||0),0);
@@ -2868,7 +2868,7 @@ async function saveNoInvLines(){
   finally{const bb=$('#isSave');if(bb)bb.disabled=false}
 }
 function renderIssues(){$('#bandBA').hidden=true;
-  const retItems=entries.filter(e=>e.type==='ret'&&!e.retDone).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,30).map(e=>({id:e.id,t:'ret',item:e.item,name:e.name,qty:e.cartons??e.qty,note:(e.reason||e.note||'')+(e.custName?(e.reason||e.note?' · ':'')+e.custName:''),by:e.by,at:e.at,done:null,other:null,isRet:true}));
+  const retItems=entries.filter(e=>e.type==='ret'&&!e.retDone&&e.custName&&(e.at||0)>=Date.parse('2026-10-19T19:58:00+03:00')).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,30).map(e=>({id:e.id,t:'ret',item:e.item,name:e.name,qty:e.cartons??e.qty,note:(e.reason||e.note||'')+(e.custName?(e.reason||e.note?' · ':'')+e.custName:''),by:e.by,at:e.at,done:null,other:null,isRet:true}));
   const open=[...issues.filter(x=>!x.done),...retItems].sort((a,b)=>(b.at||0)-(a.at||0)),done=issues.filter(x=>x.done).slice(0,40);
   const itm=k=>coItems.find(x=>x.item===k);
   const tm=t=>new Date(t).toLocaleString('ar-SA-u-nu-latn-ca-gregory',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -2913,7 +2913,7 @@ function renderIssues(){$('#bandBA').hidden=true;
     <h3 class="ish">البلاغات المفتوحة (${open.length})</h3>
     ${open.length?`<div class="islist2">${grpRows(open)}</div>`:'<div class="lines"><div class="empty">ما فيه مشاكل ✅</div></div>'}
     ${done.length?`<button type="button" class="swday${isShowDone?' open':''}" id="isDoneT"><span>${isShowDone?'▲':'▼'} البلاغات المنتهية (${done.length})</span></button>${isShowDone?`<div class="islist2">${grpRows(done)}</div>`:''}`:''}`;
-  if($('#isNew'))$('#isNew').onclick=()=>{isForm={t:'short'};renderIssues();setTimeout(()=>$('#isItem')?.focus(),50)};
+  if($('#isNew'))$('#isNew').onclick=()=>{isForm={t:null};renderIssues();setTimeout(()=>$('#isItem')?.focus(),50)};
   $('#main').querySelectorAll('[data-isg]').forEach(r=>r.onclick=e=>{if(e.target.closest('.isgctl'))return;const k=r.dataset.isg;isOpenG.has(k)?isOpenG.delete(k):isOpenG.add(k);renderIssues()});
   $('#main').querySelectorAll('[data-issel]').forEach(c=>c.onchange=()=>{c.checked?isSel.add(c.dataset.issel):isSel.delete(c.dataset.issel);renderIssues()});
   $('#main').querySelectorAll('[data-isall]').forEach(c=>c.onchange=()=>{c.dataset.isall.split(',').forEach(id=>c.checked?isSel.add(id):isSel.delete(id));renderIssues()});
@@ -2922,6 +2922,7 @@ function renderIssues(){$('#bandBA').hidden=true;
   $('#main').querySelectorAll('[data-isfix]').forEach(b=>b.onclick=()=>swFromIssue(b.dataset.isfix));
   if($('#isDoneT'))$('#isDoneT').onclick=()=>{isShowDone=!isShowDone;renderIssues()};
   if(f){
+    if(!f.t&&!f.id){const box=$('#main .isform');if(box)[...box.children].forEach(c=>{if(c.tagName==='H3'||c.classList.contains('istypes')||c.hasAttribute('data-retnew')||c.querySelector('#isCancel'))return;c.hidden=true});const sv=$('#isSave');if(sv)sv.hidden=true}
     const keep=()=>{f.qty=$('#isQty').value;f.note=$('#isNote').value;if($('#isRep'))f.rep=$('#isRep').value===''?null:Number($('#isRep').value);if($('#isMini'))f.mini=$('#isMini').value;if($('#isExp'))f.exp=$('#isExp').value};
     $('#main').querySelectorAll('[data-unpick]').forEach(b=>b.onclick=()=>{keep();const k=b.dataset.unpick;if(k==='isItem')f.it=null;else if(k==='isOther')f.other=null;else f.cust=null;renderIssues();setTimeout(()=>$('#'+k)?.focus(),50)});
     $('#main').querySelectorAll('[data-ispt]').forEach(b=>b.onclick=()=>{keep();f.pt=f.pt===b.dataset.ispt?null:b.dataset.ispt;renderIssues();setTimeout(()=>($('#isCust')||$('#isMini')||$('#isRep'))?.focus(),50)});
@@ -2931,7 +2932,7 @@ function renderIssues(){$('#bandBA').hidden=true;
     isBindPick('isItem',coItems,it=>{keep();f.it=it;if(f.other&&!sibsOf(it).some(x=>x.item===f.other.item))f.other=null;if((it.stock||0)<=0&&f.t==='short')f.t='over';renderIssues();setTimeout(()=>$('#isQty')?.focus(),50)});
     $('#main').querySelectorAll('[data-sib]').forEach(b=>b.onclick=()=>{keep();f.other=coItems.find(x=>x.item===b.dataset.sib);renderIssues()});
     $('#main').querySelectorAll('[data-ist]').forEach(b=>b.onclick=()=>{keep();f.t=b.dataset.ist;renderIssues()});
-    $('#isCancel').onclick=()=>{isForm=null;renderIssues()};
+    $('#isCancel').onclick=()=>{if(f.t&&!f.id){isForm={t:null}}else{isForm=null}renderIssues()};
     if($('#isMic'))$('#isMic').onclick=()=>{keep();recordVoice(async fl=>{$('#isvi').textContent='أجهّز المقطع…';try{f.voice=await processAudio(fl);renderIssues()}catch(err){f.voice=null;toast(err==='long'?'المقطع أطول من دقيقتين':'ما قدرت أقرأ المقطع')}})};
     const attPick=(id,acc,cam)=>{const el=$('#'+id);if(!el)return;el.onclick=()=>{keep();const inp=document.createElement('input');inp.type='file';inp.accept=acc;if(cam)inp.setAttribute('capture','environment');inp.onchange=async()=>{const fl=inp.files[0];if(!fl)return;try{const a=await fileToAtt(fl);const tot=(f.files||[]).reduce((n,x)=>n+x.d.length,0)+a.d.length;if(tot>800000)throw'big';f.files=[...(f.files||[]),a];renderIssues()}catch(err){toast(err==='big'?'الملف كبير، جرب صورة أصغر':'ما قدرت أقرأ الملف')}};inp.click()}};
     const pickF=(acc,cap,cb)=>{keep();const inp=document.createElement('input');inp.type='file';inp.accept=acc;if(cap)inp.setAttribute('capture','environment');inp.onchange=async()=>{const fl=inp.files[0];if(!fl)return;try{await cb(fl)}catch(err){toast(err==='big'?'الملف كبير، جرب ملف أخف':'ما قدرت أقرأ الملف')}};inp.click()};
@@ -2946,7 +2947,7 @@ function renderIssues(){$('#bandBA').hidden=true;
     $('#main').querySelectorAll('[data-attdel]').forEach(b=>b.onclick=()=>{keep();f.files=(f.files||[]).filter((_,i)=>i!==Number(b.dataset.attdel));renderIssues()});
     if($('#isVPlay'))$('#isVPlay').onclick=async()=>{try{const d=f.voice.data||await loadVoice(f.id);if(d)new Audio(d).play()}catch(_){}};
     if($('#isVDel'))$('#isVDel').onclick=()=>{keep();f.voice=null;renderIssues()};
-    $('#isSave').onclick=async()=>{keep();if(isForm&&isForm.t==='noinv'&&!isForm.id&&(isForm.lines||[]).length){return saveNoInvLines()}if(isForm&&isForm.t==='noinv'&&!isForm.pt){toast('اختر مندوب أو جملة أو ميني ماركت');return}if(!f.it){toast('اختر الصنف');return}if(f.t==='swap'&&!f.other){toast('اختر الصنف اللي انصرف بداله');return}{const qv=num(toLatin(String(f.qty||'').trim()));if(!(f.t==='diff'?(qv!=null&&qv!==0):(qv>0))){toast('اكتب الكمية');const qi=$('#isQty');if(qi){qi.classList.add('err');qi.focus()}return}}
+    $('#isSave').onclick=async()=>{keep();if(!f.t){toast('اختر نوع البلاغ أولاً');return}if(isForm&&isForm.t==='noinv'&&!isForm.id&&(isForm.lines||[]).length){return saveNoInvLines()}if(isForm&&isForm.t==='noinv'&&!isForm.pt){toast('اختر مندوب أو جملة أو ميني ماركت');return}if(!f.it){toast('اختر الصنف');return}if(f.t==='swap'&&!f.other){toast('اختر الصنف اللي انصرف بداله');return}{const qv=num(toLatin(String(f.qty||'').trim()));if(!(f.t==='diff'?(qv!=null&&qv!==0):(qv>0))){toast('اكتب الكمية');const qi=$('#isQty');if(qi){qi.classList.add('err');qi.focus()}return}}
       if(f.t==='nearx'){const ex=$('#isExp')?.value||f.exp||'';if(!ex){toast('اختر تاريخ البضاعة');return}f.exp=ex}
       const q=String(f.qty||'').trim()===''?null:num(toLatin(String(f.qty)));const ftype=f.t==='diff'?(q<0?'short':'over'):f.t;const qAbs=(f.t==='diff'&&q!=null)?Math.abs(q):q;const hasP=f.t==='noinv'||f.t==='nearx';if(hasP&&f.pt==='rep'&&f.rep==null){toast('اختر المندوب');return}if(hasP&&f.pt==='cust'&&!f.cust){toast('اختر العميل');return}if(hasP&&f.pt==='mini'&&!(f.mini||'').trim()){toast('اكتب اسم الماركت');return}
       const prep=!hasP||!f.pt?-9:f.pt==='rep'?f.rep:f.pt==='cust'?-1:-2;const cname=f.pt==='cust'?f.cust.name:f.pt==='mini'?f.mini.trim():'';const toTxt=prep>=0?(repNames[prep]||''):prep===-1?('جملة · '+(f.cust.code?f.cust.code+' · ':'')+cname):prep===-2?('ميني ماركت · '+cname):'';
@@ -3342,6 +3343,8 @@ function peekHtml(x){
     revealWhen(()=>document.querySelector(`.trow[data-id="${CSS.escape(x.id)}"]`),r=>r.classList.add('editing'))};
   window.openEntry=openEntry;
   document.addEventListener('click',e=>{if(!e.target.closest('#retBackRep'))return;retFrom=null;go('issues')});
+  document.addEventListener('click',e=>{if(!e.target.closest('[data-retnear]'))return;e.preventDefault();e.stopPropagation();retFrom=null;go('dhub')},true);
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-retrep]');if(!b)return;e.preventDefault();e.stopPropagation();const ids=b.dataset.retrep.split(',').filter(Boolean);if(!ids.length)return;retFrom=null;window.keepScrollUntil=Date.now()+2500;go('issues');setTimeout(()=>flashIssue(ids[0]),80);setTimeout(()=>{if(!document.querySelector(`[data-iid="${CSS.escape(ids[0])}"]`))toast('هذا المرتجع ما هو في البلاغات، شوفه في صفحة المرتجعات')},900)},true);
   document.addEventListener('click',e=>{const tr=e.target.closest('tr[data-fill]');if(!tr||e.target.closest('button[data-exp]'))return;e.stopPropagation();e.preventDefault();
     const [oi,li,left]=tr.dataset.fill.split('|');const from=coItems.find(i=>i.item===oi)||{item:oi,name:oi,stock:0},to=coItems.find(i=>i.item===li)||{item:li,name:li,stock:0};
     swForm={...swForm,from,to,issue:null,iq:null,kind:'swap'};renderSwap();
