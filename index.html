@@ -1912,8 +1912,8 @@ function renderHome(){$('#bandBA').hidden=true;
   const sq=(v,t,big,small,c)=>`<button class="sq" type="button" data-go="${v}" style="--c:${c}"><span class="sqic">${ICON2[v]}</span><span class="sqt">${t}</span><span class="sqn">${big}</span><span class="sqs">${small}</span></button>`;
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>
     <div class="hmonth">${monthName(ym)}</div>
-    <div class="sqgrid sqtop">${(()=>{const n=issues.filter(x=>!x.done).length;return sq('issues','البلاغات',n,n?'بلاغ مفتوح يحتاج حل':'ما فيه مشاكل ✅','var(--bad)').replace('class="sq"','class="sq sqwide"')})()}</div>
     ${activityHtml()}
+    <div class="sqgrid sqtop">${(()=>{const n=issues.filter(x=>!x.done).length;return sq('issues','البلاغات',n,n?'بلاغ مفتوح يحتاج حل':'ما فيه مشاكل ✅','var(--bad)').replace('class="sq"','class="sq sqwide"')})()}</div>
     <div class="sqgrid">
 
       ${sq('ret','المرتجعات',fmt(retCar),'كرتون هذا الشهر · '+td('ret')+' سطر اليوم','var(--t-ret)')}
