@@ -1942,7 +1942,7 @@ ICON2.monitor='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
 ICON2.dates=ICON2.near;
 ICON2.audit='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l4 4v14H4V3h4"/><path d="M8 11h8M8 15h8M8 7h4"/></svg>';
 // ---------- حالة الأصناف: جديد / رجع / مصفّر / ماشي (تقارن آخر لصقتين من تحديث المخزون) ----------
-var IS_ST={new:['🆕','جديد','#0f9d8a'],back:['✅','رجع','#2e86de'],zero:['⚠️','مصفّر','#c0392b'],moving:['📦','ماشي','#7d8a8a']};
+var IS_ST={new:['🆕','جديد','#0f9d8a'],back:['✅','متوفر','#2e86de'],drop:['🔻','صُفّر الحين','#e67e22'],zero:['⚠️','مصفّر','#c0392b'],moving:['🚚','ماشي (ينصرف)','#7d8a8a'],stable:['⏸','ثابت','#95a5a6']};
 var isF='all';
 ICON2.itemstatus=ICON2.monitor;
 function itemStatusRows(){
@@ -1951,22 +1951,25 @@ function itemStatusRows(){
   const last=xs[0].s||{},prev=xs.length>1?(xs[1].s||{}):null;
   return Object.entries(last).map(([k,v])=>{
     const it=coItems.find(x=>x.item===k),n=Number(v)||0;
-    let st='moving';
+    let st='stable';
     if(prev&&!(k in prev))st='new';
     else if(prev&&(Number(prev[k])||0)<=0&&n>0)st='back';
-    else if(n<=0)st='zero';
+    else if(n<=0)st=(prev&&(Number(prev[k])||0)>0)?'drop':'zero';
+    else if(prev&&(Number(prev[k])||0)>n)st='moving';
     return{item:k,name:it?it.name:k,stock:n,st};
   });
 }
 function renderItemStatus(){
   const rows=itemStatusRows();
   const cnt=k=>rows?rows.filter(r=>r.st===k).length:0;
-  const list=rows?rows.filter(r=>isF==='all'||r.st===isF).sort((a,b)=>a.name.localeCompare(b.name,'ar')):[];
+  const RQ=retQtyMap();const retRows=[...RQ.entries()].map(([k,q])=>{const it=coItems.find(x=>x.item===k);return{item:k,name:it?it.name:k,stock:it?(it.stock||0):0,q}}).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ar'));
+  const list=rows?rows.filter(r=>isF==='all'||r.st===isF).sort((a,b)=>String(a.name||a.item).localeCompare(String(b.name||b.item),'ar')):[];
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>
     ${!rows?'<p class="hint">ما فيه ستوك ملصوق بعد. الصق تحديث المخزون أولاً.</p>':`
     ${snaps.length<2?'<p class="hint">لازم لصقتين على الأقل عشان تطلع حالة (جديد / رجع). الحين الأصناف تطلع ماشي أو مصفّر بس.</p>':''}
-    <div class="seg">${[['all','الكل',rows.length],...Object.entries(IS_ST).map(([k,m])=>[k,m[0]+' '+m[1],cnt(k)])].map(([k,l,n])=>`<button type="button" data-isf="${k}" aria-pressed="${isF===k}">${l} (${n})</button>`).join('')}</div>
-    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>الصنف</th><th>الكود</th><th>الستوك</th><th>الحالة</th></tr></thead><tbody>${list.map(r=>`<tr><td class="nm">${esc(r.name)}</td><td class="mono">${esc(r.item)}</td><td class="big">${fmt(r.stock)}</td><td><span class="istag" style="--c:${IS_ST[r.st][2]}">${IS_ST[r.st][0]} ${IS_ST[r.st][1]}</span></td></tr>`).join('')}</tbody></table></div>`}`;
+    <p class="hint">آخر لصقة: ${snaps[0]?toDisp(snaps[0].date):'—'} · ${Object.keys(snaps[0]?.s||{}).length} صنف · جديد: ${cnt('new')} · مقارنة مع: ${snaps[1]?toDisp(snaps[1].date):'ما فيه لصقة قبلها'}</p>
+    <div class="seg">${[['all','الكل',rows.length],...Object.entries(IS_ST).filter(([k])=>k!=='zero'&&k!=='stable').map(([k,m])=>[k,m[0]+' '+m[1],cnt(k)]),['ret','↩ المرتجعات',RQ.size]].map(([k,l,n])=>`<button type="button" data-isf="${k}" aria-pressed="${isF===k}">${l} (${n})</button>`).join('')}</div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>الصنف</th><th>الكود</th><th>الستوك</th><th>الحالة</th></tr></thead><tbody>${isF==='ret'?retRows.map(r=>`<tr><td class="nm">${esc(r.name)}</td><td class="mono">${esc(r.item)}</td><td class="big">${fmt(r.stock)}</td><td><button type="button" class="btn ghost sm" data-retitem="${esc(r.item)}">↩ ${fmt(r.q)} مرتجع</button></td></tr>`).join(''):list.map(r=>`<tr><td class="nm">${esc(r.name)}</td><td class="mono">${esc(r.item)}</td><td class="big">${fmt(r.stock)}</td><td><span class="istag" style="--c:${IS_ST[r.st][2]}">${IS_ST[r.st][0]} ${IS_ST[r.st][1]}</span></td></tr>`).join('')}</tbody></table></div>`}`;
   $('#main').querySelectorAll('[data-isf]').forEach(b=>b.onclick=()=>{isF=b.dataset.isf;renderItemStatus()});
 }
 function renderInv(){
@@ -2379,6 +2382,8 @@ $('#main').addEventListener('click',async e=>{
 
 
 // ---------- stock ----------
+function retQtyMap(){const m=new Map();for(const e of entries){if(e.type!=='ret'||!e.item)continue;const q=Number(e.cartons??e.qty)||0;if(q>0)m.set(e.item,(m.get(e.item)||0)+q)}return m}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-retitem]');if(!b)return;custFilter=b.dataset.retitem;retFrom='stock';go('retlist')});
 function renderStock(){
   if($('#applyBar'))$('#applyBar').innerHTML=applyBarHtml();
   const prev=$('#sq')?.value||'';
@@ -2387,8 +2392,9 @@ function renderStock(){
     <div class="tbl-wrap stbl" id="stLines"></div>`;
   const draw=()=>{
     const q=wq($('#sq').value.trim());
-    const r=coItems.filter(it=>!q||(/^\d{1,4}$/.test(q)?isW(it.name,q)||it.item.includes(q):it.item.includes(q)||q.split(' ').every(t=>tokOk(it,t))));
-    $('#stLines').innerHTML=r.length?`<table class="tbl stc"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th></tr></thead><tbody>${r.slice().sort((a,b)=>(a.stock||0)-(b.stock||0)||a.item.localeCompare(b.item)).map(it=>{const lv=msLow(it);return`<tr class="${lv==='out'?'z0':''}"><td class="mono">${esc(it.item)}</td><td class="nm">${esc(it.name)}</td><td class="big ${lv}">${fmt(it.stock)}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">ما فيه أصناف بهذا البحث.</div>';
+    const RQ=retQtyMap();const tot=it=>(it.stock||0)+(RQ.get(it.item)||0);
+    const r=coItems.filter(it=>tot(it)>0&&(!q||(/^\d{1,4}$/.test(q)?isW(it.name,q)||it.item.includes(q):it.item.includes(q)||q.split(' ').every(t=>tokOk(it,t)))));
+    $('#stLines').innerHTML=r.length?`<table class="tbl stc"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>المرتجع</th></tr></thead><tbody>${r.slice().sort((a,b)=>tot(a)-tot(b)||a.item.localeCompare(b.item)).map(it=>{const lv=msLow(it);return`<tr class="${lv==='out'?'z0':''}"><td class="mono">${esc(it.item)}</td><td class="nm">${esc(it.name)}</td><td class="big ${lv}">${fmt(tot(it))}</td><td>${RQ.get(it.item)?`<button type="button" class="btn ghost sm" data-retitem="${esc(it.item)}">${fmt(RQ.get(it.item))} ↩</button>`:'—'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">غير متوفر</div>';
   };
   let t;$('#sq').oninput=()=>{clearTimeout(t);t=setTimeout(draw,150)};
   draw();dbBanner();
@@ -2643,11 +2649,14 @@ async function applyItemRows(parsed){
     const doc={...o,item:p.no,price,conv,bcs};if(p.name&&(!it||it.isNew||o.name))doc.name=p.name;if(!it&&p.name)doc.name=p.name;if(p.stock!=null)doc.stock=p.stock;if(p.ppl)doc.ppl=p.ppl;
     W.push(['i'+String(p.no).replace(/[^A-Za-z0-9_-]/g,'_'),doc]);it?u++:n++;
   }
+  const pastedSet=new Set(parsed.map(p=>p.no));const zeroed=[];
+  for(const it of coItems){if(pastedSet.has(it.item)||!(it.stock>0))continue;zeroed.push(it.item);const o=overrides.get(it.item)||{};W.push(['i'+String(it.item).replace(/[^A-Za-z0-9_-]/g,'_'),{...o,item:it.item,stock:0}])}
   if(db&&db.batch){
     for(let k=0;k<W.length;k+=400){const b=db.batch();for(const [id,d] of W.slice(k,k+400))b.set(db.collection('items').doc(id),d);status('أحفظ… '+Math.min(k+400,W.length)+' من '+W.length);await b.commit()}
   }else{for(const [id,d] of W){await store.set('items',id,d);if(++i%10===0)status('أحفظ… '+i+' من '+W.length)}}
-  const snap={};for(const p of parsed)if(p.stock!=null)snap[p.no]=p.stock;
-  if(Object.keys(snap).length){const at=Date.now(),d=iso(at);try{await store.set('snaps',d+'_'+at,{date:d,at,by:myId||'',s:snap})}catch(_){}}
+  const snap={};for(const p of parsed){const k=String(p.no??'').trim();if(p.stock!=null&&k&&!k.includes('/')&&!k.startsWith('__'))snap[k]=p.stock}
+  for(const k of zeroed)if(!(k in snap))snap[k]=0;
+  if(Object.keys(snap).length){const at=Date.now(),d=iso(at);try{await store.set('snaps',d+'_'+at,{date:d,at,by:myId||'',s:snap})}catch(err){toast('ما انحفظ الستوك لحالة الأصناف: '+(err&&err.message?err.message.slice(0,120):'خطأ'))}}
   status('');return{n,u};
 }
 async function importItems(e){
@@ -2693,7 +2702,7 @@ function showPaste(box){
   const toParsed=()=>parsePaste([H.join('\t'),...grid.filter(r=>r.some(v=>String(v||'').trim())).map(r=>H.map((_,c)=>String(r[c]??'').replace(/\t/g,' ')).join('\t'))].join('\n')).rows;
   let parsed=[];
   const summary=()=>{parsed=toParsed();const known=parsed.filter(p=>coItems.some(i=>i.item===p.no)).length,nw=parsed.filter(p=>!coItems.some(i=>i.item===p.no)&&p.name).length;
-    $('#pasteGo').disabled=!(known+nw);$('#pastePrev').innerHTML=parsed.length?`<p class="hint"><b>${parsed.length}</b> صنف · <b>${nw}</b> جديد · <b>${known}</b> بيتحدّث</p>`:''};
+    $('#pasteGo').disabled=!(known+nw);$('#pastePrev').innerHTML=parsed.length?`<p class="hint"><b>${parsed.length}</b> صنف · <b>${nw}</b> جديد · <b>${known}</b> بيتحدّث</p>${known+nw?'':'<p class="hint" style="color:var(--bad)">ما قدرت أقرا أي صنف. الأصناف الجديدة لازم يكون معها اسم الصنف، والأصناف القديمة لازم يكون كودها مطابق.</p>'}`:''};
   const draw=()=>{const n=Math.max(grid.length+5,12);
     $('#xg').innerHTML=Array.from({length:n},(_,r)=>`<tr>${H.map((_,c)=>`<td><input class="xc${c===1?' xn':''}" data-r="${r}" data-c="${c}" value="${esc(grid[r]?.[c]??'')}" ${c===1?'':'inputmode="decimal"'} autocomplete="off"></td>`).join('')}</tr>`).join('');summary()};
   const xg=$('#xg');
