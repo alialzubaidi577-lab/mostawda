@@ -2546,7 +2546,7 @@ function logTable(rows){
     if(wh){const af=c.src==='co'?t.get(c.item):null,b=it&&c.src==='co'?it.stock:null,d=af!=null&&b!=null?af-b:null;
       ba=`<td>${fmt(b)}</td><td>${af!=null?fmt(af):'—'}</td><td class="${dcls(d)}">${dtxt(d)}</td>`}
     return`<tr class="trow${editing===c.id?' editing':''}${reqOpen(c.id)?' reqrow':''}" data-id="${esc(c.id)}"><td class="n">${i+1}</td><td>${toDisp(eDate(c))}${c.at?` <span class="tm">${new Date(c.at).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'})}</span>`:''}</td>${all?`<td class="nm">${esc((c.custCode?c.custCode+' · ':'')+(c.custName||''))}</td>`:''}<td class="mono">${esc(c.item)}</td><td class="nm">${esc(c.name)}</td><td>${c.expiry?toDisp(c.expiry)+' '+badge(c.expiry):'—'}</td>
-      <td class="big">${fmt(c.qty)}</td><td>${esc(c.unit)}</td>${wh?ba:ret?'':`<td>${c.pcs!=null?fmt(c.pcs):'—'}</td>`}${ret?`<td>${esc(reasonText(c))}${c.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(c.id)}">▶ صوت</button>`:''}</td><td class="mono">${esc(invText(c))}</td>`:''}
+      <td class="big">${fmt(c.qty)}</td><td>${esc(c.unit)}</td>${wh?ba:ret?'':`<td>${c.pcs!=null?fmt(c.pcs):'—'}</td>`}${ret?`<td>${esc(reasonText(c))}${c.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(c.id)}">▶ صوت</button>`:''}${c.files&&c.files.length?` ${attLinks(c)}`:''}</td><td class="mono">${esc(invText(c))}</td>`:''}
       ${wh?'':`<td>${c.amount!=null?money(c.amount):'—'}</td>`}<td>${esc(names[c.by]||'')}${seenTick(c)}</td>
       <td class="acts">${actsBtns(c)}</td></tr>`};
   let body;
@@ -3136,25 +3136,25 @@ async function fileToAtt(fl){
     const d=c.toDataURL('image/jpeg',0.72);if(d.length>450000)throw'big';
     return{n:(fl.name||'صورة')+'.jpg',t:'image/jpeg',d};
   }
-  if(fl.size>400000)throw'big';
+  if(fl.size>650000)throw'big';
   const d=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(fl)});
   return{n:fl.name||'ملف.pdf',t:fl.type||'application/pdf',d};
 }
 async function scanDoc(fl){
-  const bmp=await createImageBitmap(fl);const sc=Math.min(1,1400/Math.max(bmp.width,bmp.height));
+  const bmp=await createImageBitmap(fl);const sc=Math.min(1,1600/Math.max(bmp.width,bmp.height));
   const W=Math.max(1,Math.round(bmp.width*sc)),H=Math.max(1,Math.round(bmp.height*sc));
   const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d',{willReadFrequently:true});
   g.drawImage(bmp,0,0,W,H);const im=g.getImageData(0,0,W,H),px=im.data,N=W*H;
   const lum=new Uint8Array(N);for(let j=0;j<N;j++){const k=j*4;lum[j]=px[k]*.299+px[k+1]*.587+px[k+2]*.114}
   const sorted=Array.from(lum).sort((a,b)=>a-b);const bg=Math.max(1,sorted[Math.floor(N*0.9)]);
-  for(let j=0;j<N;j++){let v=Math.min(255,lum[j]*255/bg);v=Math.max(0,Math.min(255,((v/255-0.5)*1.5+0.5)*255));const k=j*4;px[k]=v;px[k+1]=v;px[k+2]=v;px[k+3]=255}
+  for(let j=0;j<N;j++){let v=Math.min(255,lum[j]*255/bg);v=Math.max(0,Math.min(255,((v/255-0.5)*1.5+0.5)*255));v=v>185?255:0;const k=j*4;px[k]=v;px[k+1]=v;px[k+2]=v;px[k+3]=255}
   g.putImageData(im,0,0);
   let x0=W,y0=H,x1=0,y1=0;
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(px[(y*W+x)*4]<200){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
   let cx=0,cy=0,cw=W,ch=H;
   if(x1>x0&&y1>y0&&(x1-x0)*(y1-y0)>W*H*0.3){const mx=Math.round(W*0.02),my=Math.round(H*0.02);cx=Math.max(0,x0-mx);cy=Math.max(0,y0-my);cw=Math.min(W,x1+mx)-cx;ch=Math.min(H,y1+my)-cy}
   const out=document.createElement('canvas');out.width=cw;out.height=ch;out.getContext('2d').drawImage(c,cx,cy,cw,ch,0,0,cw,ch);
-  const d=out.toDataURL('image/jpeg',0.75);if(d.length>450000)throw'big';
+  const d=out.toDataURL('image/jpeg',0.8);if(d.length>450000)throw'big';
   return{n:(fl.name||'صفحة')+'.jpg',t:'image/jpeg',d};
 }
 async function pagesToPdf(pages){
@@ -3190,7 +3190,7 @@ async function pagesToPdf(pages){
 var ATT={};
 function attS(k){return ATT[k]||(ATT[k]={files:[],pages:null,open:false})}
 function attLoad(k,files){ATT[k]={files:[...(files||[])],pages:null,open:false}}
-function attAdd(k,a){const s=attS(k);const tot=s.files.reduce((n,x)=>n+x.d.length,0)+a.d.length;if(tot>800000){toast('الملفات كبيرة، احذف شي أو جرب ملف أخف');return false}s.files=[...s.files,a];return true}
+function attAdd(k,a){const s=attS(k);const tot=s.files.reduce((n,x)=>n+x.d.length,0)+a.d.length;if(tot>960000){toast('الملفات كبيرة، احذف شي أو جرب ملف أخف');return false}s.files=[...s.files,a];return true}
 function attLink(a){return `<a class="attlink" href="${a.d}" target="_blank" download="${esc(a.n)}">${a.t.startsWith('image')?'🖼':'📄'} ${esc(a.n)}</a>`}
 function attLinks(x){return (x.files||[]).map(a=>' '+attLink(a)).join('')}
 function attInner(k){const s=attS(k),n=s.files.length;
@@ -3315,7 +3315,7 @@ function renderIssues(){$('#bandBA').hidden=true;
     if($('#isMic'))$('#isMic').onclick=()=>{keep();recordVoice(async fl=>{$('#isvi').textContent='أجهّز المقطع…';try{f.voice=await processAudio(fl);renderIssues()}catch(err){f.voice=null;toast(err==='long'?'المقطع أطول من دقيقتين':'ما قدرت أقرأ المقطع')}})};
     const attPick=(id,acc,cam)=>{const el=$('#'+id);if(!el)return;el.onclick=()=>{keep();const inp=document.createElement('input');inp.type='file';inp.accept=acc;if(cam)inp.setAttribute('capture','environment');inp.onchange=async()=>{const fl=inp.files[0];if(!fl)return;try{const a=await fileToAtt(fl);const tot=(f.files||[]).reduce((n,x)=>n+x.d.length,0)+a.d.length;if(tot>800000)throw'big';f.files=[...(f.files||[]),a];renderIssues()}catch(err){toast(err==='big'?'الملف كبير، جرب صورة أصغر':'ما قدرت أقرأ الملف')}};inp.click()}};
     const pickF=(acc,cap,cb)=>{keep();const inp=document.createElement('input');inp.type='file';inp.accept=acc;if(cap)inp.setAttribute('capture','environment');inp.onchange=async()=>{const fl=inp.files[0];if(!fl)return;try{await cb(fl)}catch(err){toast(err==='big'?'الملف كبير، جرب ملف أخف':'ما قدرت أقرأ الملف')}};inp.click()};
-    const addAtt=a=>{const tot=(f.files||[]).reduce((n,x)=>n+x.d.length,0)+a.d.length;if(tot>800000)throw'big';f.files=[...(f.files||[]),a]};
+    const addAtt=a=>{const tot=(f.files||[]).reduce((n,x)=>n+x.d.length,0)+a.d.length;if(tot>960000)throw'big';f.files=[...(f.files||[]),a]};
     if($('#isAtt'))$('#isAtt').onclick=()=>{keep();f.attOpen=!f.attOpen;renderIssues()};
     if($('#isAdoc'))$('#isAdoc').onclick=()=>pickF('application/pdf,image/*,.doc,.docx,.xls,.xlsx,.txt',false,async fl=>{addAtt(await fileToAtt(fl));f.attOpen=false;renderIssues()});
     if($('#isAimg'))$('#isAimg').onclick=()=>pickF('image/*',true,async fl=>{addAtt(await fileToAtt(fl));f.attOpen=false;renderIssues()});
