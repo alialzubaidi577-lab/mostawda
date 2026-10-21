@@ -2439,7 +2439,8 @@ function retOpenEdit(idsStr){
   if(f.custId)setCust({id:f.custId,code:f.custCode||'',name:f.custName||''});
   retDate=eDate(f);
   go('ret');
-  const putNote=()=>{const nt=$('#note');if(nt)nt.value=f.note||''};putNote();setTimeout(putNote,60);
+  attLoad('en',f.files||[]);attPaint('en');
+  const putNote=()=>{const nt=$('#note');if(nt)nt.value=f.note||'';attPaint('en')};putNote();setTimeout(putNote,60);
 }
 // saves the whole return: updates kept items, adds new ones, deletes the ones taken out
 async function retSaveEdit(rows){
@@ -2447,16 +2448,18 @@ async function retSaveEdit(rows){
   const rd=($('#rd')?parseD($('#rd').value):null)||retDate||key.date;
   const noteTxt=($('#note')?.value||'').trim();
   quietW++;try{
-    for(const d of rows){
+    const files=attS('en').files;
+    for(let i=0;i<rows.length;i++){const d=rows[i];
       if(d.id){
         keep.add(d.id);
         const o=entries.find(x=>x.id===d.id)||{};
-        const patch={qty:d.qty,expiry:d.exp,date:rd,note:noteTxt,custId:cust.id,custCode:cust.code||'',custName:cust.name,editedAt:Date.now()};
+        const patch={qty:d.qty,expiry:d.exp,date:rd,note:noteTxt,custId:cust.id,custCode:cust.code||'',custName:cust.name,editedAt:Date.now(),files:i===0?files:(o.files||[])};
         if((o.unit||'كرتون')==='كرتون')patch.cartons=d.qty;
         await store.update('entries',d.id,patch);
       }else{
         const iv=readInv();
         const doc={type:'ret',src:d.it.src,item:d.it.item,name:d.it.name,...figures(d.it,d.unit,d.qty),expiry:d.exp,date:rd,reason:'',note:noteTxt,batch:key.batch,inv:'',stock:d.it.src==='co'?d.it.stock:null,custId:cust.id,custCode:cust.code||'',custName:cust.name,by:myId||'',at:Date.now(),...iv};
+        doc.files=i===0?files:[];
         await store.add('entries',doc);
       }
     }
@@ -2546,14 +2549,14 @@ function logTable(rows){
     if(wh){const af=c.src==='co'?t.get(c.item):null,b=it&&c.src==='co'?it.stock:null,d=af!=null&&b!=null?af-b:null;
       ba=`<td>${fmt(b)}</td><td>${af!=null?fmt(af):'—'}</td><td class="${dcls(d)}">${dtxt(d)}</td>`}
     return`<tr class="trow${editing===c.id?' editing':''}${reqOpen(c.id)?' reqrow':''}" data-id="${esc(c.id)}"><td class="n">${i+1}</td><td>${toDisp(eDate(c))}${c.at?` <span class="tm">${new Date(c.at).toLocaleTimeString('ar-SA-u-nu-latn-ca-gregory',{hour:'numeric',minute:'2-digit'})}</span>`:''}</td>${all?`<td class="nm">${esc((c.custCode?c.custCode+' · ':'')+(c.custName||''))}</td>`:''}<td class="mono">${esc(c.item)}</td><td class="nm">${esc(c.name)}</td><td>${c.expiry?toDisp(c.expiry)+' '+badge(c.expiry):'—'}</td>
-      <td class="big">${fmt(c.qty)}</td><td>${esc(c.unit)}</td>${wh?ba:ret?'':`<td>${c.pcs!=null?fmt(c.pcs):'—'}</td>`}${ret?`<td>${esc(reasonText(c))}${c.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(c.id)}">▶ صوت</button>`:''}${c.files&&c.files.length?` ${attLinks(c)}`:''}</td><td class="mono">${esc(invText(c))}</td>`:''}
+      <td class="big">${fmt(c.qty)}</td><td>${esc(c.unit)}</td>${wh?ba:ret?'':`<td>${c.pcs!=null?fmt(c.pcs):'—'}</td>`}${ret?`<td>${esc(reasonText(c))}${c.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(c.id)}">▶ صوت</button>`:''}${c.files&&c.files.length?` ${attLinksRef(c)}`:''}</td><td class="mono">${esc(invText(c))}</td>`:''}
       ${wh?'':`<td>${c.amount!=null?money(c.amount):'—'}</td>`}<td>${esc(names[c.by]||'')}${seenTick(c)}</td>
       <td class="acts">${actsBtns(c)}</td></tr>`};
   let body;
   if(grouped){
     const g=new Map();for(const c of rows){const k=c.custId||'_';let x=g.get(k);if(!x){x={id:k,code:c.custCode||'',name:c.custName||'بدون عميل',rows:[]};g.set(k,x)}x.rows.push(c)}
     const CH=['الكود','الصنف','الكمية','تاريخ البضاعة','السبب',''];
-    const crow=c=>`<tr class="trow${editing===c.id?' editing':''}${reqOpen(c.id)?' reqrow':''}" data-id="${esc(c.id)}"><td class="mono">${esc(c.item)}</td><td class="nm">${esc(c.name)}${seenTick(c)}</td><td class="big">${fmt(c.qty)}${c.unit!=='كرتون'?' '+esc(c.unit):''}</td><td>${c.expiry?toDisp(c.expiry):'—'}</td><td class="rs">${esc(reasonText(c))}${c.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(c.id)}">▶</button>`:''}</td><td class="acts">${actsBtns(c).replace('<button class="btn ghost sm" type="button" data-edit>تعديل</button>','')}</td></tr>`;
+    const crow=c=>`<tr class="trow${editing===c.id?' editing':''}${reqOpen(c.id)?' reqrow':''}" data-id="${esc(c.id)}"><td class="mono">${esc(c.item)}</td><td class="nm">${esc(c.name)}${seenTick(c)}</td><td class="big">${fmt(c.qty)}${c.unit!=='كرتون'?' '+esc(c.unit):''}</td><td>${c.expiry?toDisp(c.expiry):'—'}</td><td class="rs">${esc(reasonText(c))}${c.voice?` <button class="btn ghost sm" type="button" data-voice="${esc(c.id)}">▶</button>`:''}${c.files&&c.files.length?` ${attLinksRef(c)}`:''}</td><td class="acts">${actsBtns(c).replace('<button class="btn ghost sm" type="button" data-edit>تعديل</button>','')}</td></tr>`;
     return`<div class="cacc">${[...g.values()].map(x=>{const op=openCust.has(x.id)||g.size===1;const car=x.rows.reduce((a,c)=>a+(c.cartons||0),0),last=x.rows.map(eDate).sort().pop(),noExp=x.rows.filter(c=>!c.expiry).length;
       return`<div class="cblock${op?' open':''}">${op?`<div class="rrow">${retRepBtn(x)}<button type="button" class="btn ghost sm" data-retnear="1">↪ يرجعني للتواريخ القريبة</button>${(view==='retlist'&&retFrom==='stock')?'<button type="button" class="btn ghost sm" data-retstk="1">↩ يرجعني للاستوك</button>':''}</div>`:''}<button type="button" class="chead" data-cg="${esc(x.id)}"><span class="arw">${op?'▲':'▼'}</span><span class="cn"><b>${esc(x.name)}</b><small>${x.code?'رقم '+esc(x.code):'بدون رقم'} · ${new Set(x.rows.map(eDate)).size} دفعة · آخر مرتجع ${toDisp(last)}${noExp?` · <i>${noExp} بدون تاريخ انتهاء</i>`:''}</small></span><span class="cv"><b>${new Set(x.rows.map(c=>c.item)).size}</b><small>صنف</small></span><span class="cv"><b>${fmt(car)}</b><small>كرتون</small></span></button>
         
@@ -3134,7 +3137,7 @@ async function fileToAtt(fl){
     const c=document.createElement('canvas');c.width=Math.max(1,Math.round(bmp.width*sc));c.height=Math.max(1,Math.round(bmp.height*sc));
     c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
     const d=c.toDataURL('image/jpeg',0.72);if(d.length>450000)throw'big';
-    return{n:(fl.name||'صورة')+'.jpg',t:'image/jpeg',d};
+    return{n:(fl.name||'صورة').replace(/\.[^.]+$/,'')+'.jpg',t:'image/jpeg',d};
   }
   if(fl.size>650000)throw'big';
   const d=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(fl)});
@@ -3193,6 +3196,11 @@ function attLoad(k,files){ATT[k]={files:[...(files||[])],pages:null,open:false}}
 function attAdd(k,a){const s=attS(k);const tot=s.files.reduce((n,x)=>n+x.d.length,0)+a.d.length;if(tot>960000){toast('الملفات كبيرة، احذف شي أو جرب ملف أخف');return false}s.files=[...s.files,a];return true}
 function attLink(a){return `<a class="attlink" href="${a.d}" target="_blank" download="${esc(a.n)}">${a.t.startsWith('image')?'🖼':'📄'} ${esc(a.n)}</a>`}
 function attLinks(x){return (x.files||[]).map(a=>' '+attLink(a)).join('')}
+// list chips: names only, so the list never carries photo data in the page; a tap opens the file from the saved record
+function attLinksRef(x){return (x.files||[]).map((a,i)=>` <button type="button" class="attlink" data-atref="${esc(x.id)}" data-atidx="${i}">${a.t.startsWith('image')?'🖼':'📄'} ${esc(a.n)}</button>`).join('')}
+function dataUrlToBlob(d){const k=d.indexOf(','),mime=d.slice(5,d.indexOf(';')),bin=atob(d.slice(k+1));const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime||'application/octet-stream'})}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-atref]');if(!b)return;e.preventDefault();const en=entries.find(x=>x.id===b.dataset.atref);const a=en&&en.files&&en.files[Number(b.dataset.atidx)];if(!a){toast('الملف ما لقيته');return}if(a.t.startsWith('image')){const ov=document.createElement('div');ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;padding:12px';const im=document.createElement('img');im.src=a.d;im.style.cssText='max-width:100%;max-height:100%;object-fit:contain';ov.appendChild(im);ov.onclick=()=>ov.remove();document.body.appendChild(ov);return}
+try{const u=URL.createObjectURL(dataUrlToBlob(a.d));const w=window.open(u,'_blank');if(!w)toast('الـPDF يفتح من الرابط الحي، هنا الصفحة تمنع فتحه')}catch(_){toast('ما قدرت أفتح الملف')}});
 function attInner(k){const s=attS(k),n=s.files.length;
   return `<div class="attrow"><button type="button" class="btn ghost sm" data-attact="open" data-attk="${k}">📎 إرفاق${n?' ('+n+')':''}</button></div>`
     +(s.open?`<div class="attrow attmenu"><button type="button" class="btn sm" data-attact="doc" data-attk="${k}">📁 مستند من الجوال</button><button type="button" class="btn sm" data-attact="pdf" data-attk="${k}">📷 تصوير PDF</button><button type="button" class="btn sm" data-attact="img" data-attk="${k}">🖼 صورة</button></div>`:'')
@@ -3210,9 +3218,10 @@ document.addEventListener('click',async e=>{
   if(a==='pgcancel'){s.pages=null;return attPaint(k)}
   if(a==='pgsave'){try{const d=await pagesToPdf(s.pages);if(attAdd(k,{n:'مسح '+new Date().toLocaleDateString('ar-SA-u-nu-latn-ca-gregory')+'.pdf',t:'application/pdf',d}))s.pages=null}catch(err){toast(err==='big'?'الصفحات كبيرة، احذف صفحة أو صوّر أخف':'ما قدرت أسوي الـ PDF')}return attPaint(k)}
   const acc=a==='doc'?'application/pdf,image/*,.doc,.docx,.xls,.xlsx,.txt':'image/*';
-  const cap=a==='pdf'||a==='pgadd'||a==='img';
+  const cap=false;
   const inp=document.createElement('input');inp.type='file';inp.accept=acc;if(cap)inp.setAttribute('capture','environment');
-  inp.onchange=async()=>{const fl=inp.files[0];if(!fl)return;try{const at=(a==='pdf'||a==='pgadd')&&fl.type&&fl.type.startsWith('image/')?await scanDoc(fl):await fileToAtt(fl);if(a==='pdf'||a==='pgadd'){s.pages=[...(s.pages||[]),{d:at.d}];s.open=false}else if(attAdd(k,at))s.open=false}catch(err){toast(err==='big'?'الملف كبير، جرب ملف أخف':'ما قدرت أقرأ الملف')}attPaint(k)};
+  inp.style.cssText='position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';document.body.appendChild(inp);
+  inp.onchange=async()=>{const fl=inp.files[0];inp.remove();if(!fl)return;try{const at=(a==='pdf'||a==='pgadd')&&fl.type&&fl.type.startsWith('image/')?await scanDoc(fl):await fileToAtt(fl);if(a==='pdf'||a==='pgadd'){s.pages=[...(s.pages||[]),{d:at.d}];s.open=false}else if(attAdd(k,at))s.open=false}catch(err){toast(err==='big'?'الملف كبير، جرب ملف أخف':'ما قدرت أقرأ الملف')}attPaint(k)};
   inp.click();
 });
 
