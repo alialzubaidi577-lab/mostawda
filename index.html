@@ -1575,7 +1575,7 @@ const smUnit={'حبة':'حبة','باكت':'علبة','شدة':'علبة','كر�
 const ready=Promise.all([
   Promise.resolve(),
   Promise.resolve()
-]).then(()=>{loaded=true;rebuildCo();render()}).catch(()=>{$('#dbInfo').textContent='تعذر التحميل';status('ما قدرت أحمّل الأصناف. حدّث الصفحة.',true)});
+]).then(()=>{loaded=true;rebuildCo();render();oneTimeZeroFix()}).catch(()=>{$('#dbInfo').textContent='تعذر التحميل';status('ما قدرت أحمّل الأصناف. حدّث الصفحة.',true)});
 function priceOf(it,u){
   if(!it)return null;
   if(it.price[u]!=null)return{v:it.price[u],calc:false};
@@ -1972,7 +1972,7 @@ function renderHome(){$('#bandBA').hidden=true;
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>
     <div class="hmonth">${monthName(ym)}</div>
     ${activityHtml()}
-    <div class="sqgrid sqtop">${(()=>{const n=issues.filter(x=>!x.done).length;return sq('issues','البلاغات',n,n?'بلاغ مفتوح يحتاج حل':'ما فيه مشاكل ✅','var(--bad)').replace('class="sq"','class="sq sqwide"')})()}</div>
+    <div class="sqgrid sqtop">${(()=>{const n=issues.filter(x=>!x.done).length+entries.filter(e=>e.type==='ret'&&!e.retDone&&e.custName).length;return sq('issues','البلاغات',n,n?'بلاغ مفتوح يحتاج حل':'ما فيه مشاكل ✅','var(--bad)').replace('class="sq"','class="sq sqwide"')})()}</div>
     <div class="sqgrid">
 
       ${sq('ret','المرتجعات',fmt(retCar),'كرتون هذا الشهر · '+td('ret')+' سطر اليوم','var(--t-ret)')}
@@ -2032,7 +2032,7 @@ function renderInv(){
   const counted=whTotals(),diffs=coItems.filter(i=>counted.has(i.item)&&Math.abs(counted.get(i.item)-i.stock)>.001).length;
   const sq=(v,t,big,small,c)=>`<button class="sq" type="button" data-go="${v}" style="--c:${c}"><span class="sqic">${ICON2[v]}</span><span class="sqt">${t}</span><span class="sqn">${big}</span><span class="sqs">${small}</span></button>`;
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div><div class="sqgrid">
-    ${sq('stock','ستوك المستودع',(()=>{const N=adjNetMap(openAdjList()),C=closedNoinvMap();return coItems.filter(i=>(i.stock||0)+(N.get(i.item)||0)-(C.get(i.item)||0)>0).length})(),'صنف','var(--t-st)')}
+    ${sq('stock','ستوك المستودع',(()=>{const N=adjNetMap(stockEvents());return coItems.filter(i=>(i.stock||0)+(N.get(i.item)||0)>0).length})(),'صنف','var(--t-st)')}
     ${sq('wh','جرد المستودع',counted.size,'صنف مجرود هذا الشهر','var(--t-wh)')}
     ${sq('result','نتيجة الجرد',diffs,'صنف فيه فرق','var(--t-st)')}
     ${sq('swap','تصحيح النكهات',simSuggestions(diffRows()).filter(x=>x.rq<x.q-1e-9).length+issues.filter(x=>!x.done&&x.t==='swap'&&x.other).length,'يحتاج تصحيح','var(--t-wh)')}
@@ -2585,6 +2585,11 @@ function openAdjList(){const L=[];
   for(const e of entries){if(e.type!=='ret'||!e.item||e.retDone)continue;const q=Number(e.cartons??e.qty)||0;if(q>0)L.push({k:'ret',id:e.id,item:e.item,name:e.name,qty:q,at:e.at||0,who:e.custName||'',note:e.reason||e.note||''})}
   for(const x of issues){if(x.done||!x.item||(x.t!=='short'&&x.t!=='noinv'&&x.t!=='over'))continue;const q=Number(x.qty)||0;if(q>0)L.push({k:x.t,id:x.id,item:x.item,name:x.name,qty:q,at:x.at||0,who:x.to||'',note:x.note||''})}
   return L}
+// التعديلات اللي تدخل الستوك: كل مرتجع/عجز/بدون فاتورة/زيادة انسجل بعد آخر لصقة. الإقفال ما يغيّر الرقم، واللصقة الجديدة تشمل اللي قبلها
+function stockEvents(){const pa=(snaps[0]&&snaps[0].at)||0;const L=[];const gone=d=>!!d&&(d.at||0)<=pa;
+  for(const e of entries){if(e.type!=='ret'||!e.item||gone(e.retDone))continue;const q=Number(e.cartons??e.qty)||0;if(q>0)L.push({k:'ret',id:e.id,item:e.item,name:e.name,qty:q,at:e.at||0,who:e.custName||'',note:e.reason||e.note||'',done:!!e.retDone})}
+  for(const x of issues){if(!x.item||(x.t!=='short'&&x.t!=='noinv'&&x.t!=='over')||gone(x.done))continue;const q=Number(x.qty)||0;if(q>0)L.push({k:x.t,id:x.id,item:x.item,name:x.name,qty:q,at:x.at||0,who:x.to||'',note:x.note||'',done:!!x.done})}
+  return L}
 function adjNetMap(L){const m=new Map();for(const r of L)m.set(r.item,(m.get(r.item)||0)+((r.k==='ret'||r.k==='over')?r.qty:-r.qty));return m}
 function closedNoinvMap(){const pa=(snaps[0]&&snaps[0].at)||0;const m=new Map();for(const x of issues){if(x.t!=='noinv'||!x.done||!x.item)continue;if((x.done.at||0)<=pa)continue;const q=Number(x.qty)||0;if(q>0)m.set(x.item,(m.get(x.item)||0)+q)}return m}
 function adjSign(n){return (n>0?'+':n<0?'−':'')+fmt(Math.abs(n))}
@@ -2592,15 +2597,15 @@ function adjLine(L){const s={ret:0,short:0,noinv:0};for(const r of L)s[r.k]+=r.q
   return [s.ret?'↩ +'+fmt(s.ret):'',s.short?'عجز −'+fmt(s.short):'',s.noinv?'بدون فاتورة −'+fmt(s.noinv):''].filter(Boolean).join(' · ')}
 // فقاعة تفاصيل التعديلات جنب الصنف: تنفتح بالضغط على العلامة، وتسكر بالضغط برا
 function closeAdjPop(){const p=document.getElementById('adjPop');if(p)p.remove()}
-function adjBoxHtml(item,withName){const L=openAdjList().filter(r=>r.item===item);if(!L.length)return'';
+function adjBoxHtml(item,withName){const L=stockEvents().filter(r=>r.item===item);if(!L.length)return'';
   const ord={ret:0,short:1,noinv:2,over:3};L.sort((x,y)=>ord[x.k]-ord[y.k]||(y.at||0)-(x.at||0));
   const base=Number((coItems.find(x=>x.item===item)||{}).stock)||0;
   const zad=L.filter(r=>r.k==='ret'||r.k==='over').reduce((t,r)=>t+r.qty,0);
-  const ajz=L.filter(r=>r.k==='short'||r.k==='noinv').reduce((t,r)=>t+r.qty,0)+(closedNoinvMap().get(item)||0);
+  const ajz=L.filter(r=>r.k==='short'||r.k==='noinv').reduce((t,r)=>t+r.qty,0);
   const tot=base+zad-ajz;
-  return `<div class="adjpop-body">${withName?`<div class="adjpop-h">${esc(L[0].name)}</div>`:''}<div class="adjpop-sum adjpop-top"><span>الساب</span><b>${fmt(base)}</b></div>${L.map(r=>{const m=IS_T[r.k]||['','','#777'];const sg=(r.k==='ret'||r.k==='over')?'+':'−';return `<button type="button" class="adjpop-r" style="--c:${m[2]}" ${r.k==='ret'?`data-retitem="${esc(r.who||r.item)}"`:`data-goissue="${esc(r.id)}"`}><span class="istag" style="--c:${m[2]}">${m[0]} ${m[1]}</span><b>${sg}${fmt(r.qty)}</b>${r.at?`<small>${toDisp(iso(r.at))}</small>`:''}<span class="adjpop-go">←</span></button>`}).join('')}<div class="adjpop-sum adjpop-bot"><span>مجموع</span><b>${fmt(tot)}</b></div></div>`}
+  return `<div class="adjpop-body">${withName?`<div class="adjpop-h">${esc(L[0].name)}</div>`:''}<div class="adjpop-sum adjpop-top"><span>الساب</span><b>${fmt(base)}</b></div>${L.map(r=>{const m=IS_T[r.k]||['','','#777'];const sg=(r.k==='ret'||r.k==='over')?'+':'−';return `<button type="button" class="adjpop-r" style="--c:${m[2]}" ${r.k==='ret'?`data-retitem="${esc(r.who||r.item)}"`:`data-goissue="${esc(r.id)}"`}><span class="istag" style="--c:${m[2]}">${m[0]} ${m[1]}</span><b>${sg}${fmt(r.qty)}</b>${r.at?`<small>${toDisp(iso(r.at))}${r.done?' ✓':''}</small>`:''}<span class="adjpop-go">←</span></button>`}).join('')}<div class="adjpop-sum adjpop-bot"><span>مجموع</span><b>${fmt(tot)}</b></div></div>`}
 function openAdjPop(item,anchor){const cur=document.getElementById('adjPop');const same=cur&&cur.dataset.item===item;closeAdjPop();if(same)return;
-  if(!openAdjList().some(r=>r.item===item))return;
+  if(!stockEvents().some(r=>r.item===item))return;
   const p=document.createElement('div');p.id='adjPop';p.className='adjpop';p.dataset.item=item;
   p.innerHTML=adjBoxHtml(item,true);
   document.body.appendChild(p);
@@ -2648,9 +2653,7 @@ function openOverAdd(){let ov=document.getElementById('csOv');if(!ov){ov=documen
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ovstk]');if(!b)return;e.preventDefault();ovWantOpen=true;go('stock')});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-stkgo]');if(!b)return;e.preventDefault();e.stopPropagation();go('stock')},true);
-function stkNoteHtml(){if(!snaps.length)return '';const last=Math.max(...snaps.map(x=>x.at||0));
-  const n=entries.filter(e=>e.type==='ret'&&e.retDone&&(e.retDone.at||0)>last).length+issues.filter(x=>x.done&&(x.t==='short'||x.t==='noinv'||x.t==='over')&&(x.done.at||0)>last).length;
-  return n?`<div class="stkNote">تم إقفال ${n} بلاغ بعد آخر لصقة، وانعكس على الرقم. الصق الستوك الجديد عشان يتساوى مع الساب.</div>`:''}
+function stkNoteHtml(){return ''}
 function renderStock(){closeAdjPop();const ovKeep=ovWantOpen||!!document.getElementById('ovPanel');closeOvPanel();
   if($('#applyBar'))$('#applyBar').innerHTML=applyBarHtml();
   const prev=$('#sq')?.value||'';
@@ -2660,9 +2663,9 @@ function renderStock(){closeAdjPop();const ovKeep=ovWantOpen||!!document.getElem
   const newSet=new Set((itemStatusRows()||[]).filter(x=>x.st==='new').map(x=>x.item));
   const draw=()=>{
     const q=wq($('#sq').value.trim());
-    const ADJ=openAdjList(),NET=adjNetMap(ADJ),RQ=retQtyMap(),CN=closedNoinvMap();const tot=it=>(it.stock||0)+(NET.get(it.item)||0)-(CN.get(it.item)||0);
-    const r=coItems.filter(it=>((tot(it)>0&&(it.stock||0)>0)||ADJ.some(a=>a.item===it.item&&(a.k==='ret'||a.k==='noinv'))||CN.has(it.item))&&(!q||(/^\d{1,4}$/.test(q)?isW(it.name,q)||it.item.includes(q):it.item.includes(q)||q.split(' ').every(t=>tokOk(it,t)))));
-    $('#stLines').innerHTML=(r.length?`<table class="tbl stc"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>التعديلات</th></tr></thead><tbody>${r.slice().sort((a,b)=>tot(a)-tot(b)||a.item.localeCompare(b.item)).map(it=>{const lv=msLow(it),adjs=ADJ.filter(r=>r.item===it.item);return`<tr${adjs.length?` data-adjm="${esc(it.item)}"`:''} class="${lv==='out'?'z0':''}${newSet.has(it.item)?' newrow':''}"><td class="mono">${esc(it.item)}</td><td class="nm">${esc(it.name)}</td><td class="big ${lv}">${fmt(tot(it))}</td><td>${adjs.length?`<button type="button" class="adjbadge ${(NET.get(it.item)||0)>0?'pos':(NET.get(it.item)||0)<0?'neg':''}" data-adjm="${esc(it.item)}" aria-label="تفاصيل التعديلات">${adjSign(NET.get(it.item)||0)}</button>`:'—'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">غير متوفر</div>');
+    const ADJ=stockEvents(),NET=adjNetMap(ADJ);const tot=it=>(it.stock||0)+(NET.get(it.item)||0);
+    const r=coItems.filter(it=>tot(it)>0&&(!q||(/^\d{1,4}$/.test(q)?isW(it.name,q)||it.item.includes(q):it.item.includes(q)||q.split(' ').every(t=>tokOk(it,t)))));
+    $('#stLines').innerHTML=(r.length?`<table class="tbl stc"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>التعديلات</th></tr></thead><tbody>${r.slice().sort((a,b)=>tot(a)-tot(b)||a.item.localeCompare(b.item)).map(it=>{const lv=(it.stock||0)>0?msLow(it):'',adjs=ADJ.filter(r=>r.item===it.item);return`<tr${adjs.length?` data-adjm="${esc(it.item)}"`:''} class="${lv==='out'?'z0':''}${newSet.has(it.item)?' newrow':''}"><td class="mono">${esc(it.item)}</td><td class="nm">${esc(it.name)}</td><td class="big ${lv}">${fmt(tot(it))}</td><td>${adjs.length?`<button type="button" class="adjbadge ${(NET.get(it.item)||0)>0?'pos':(NET.get(it.item)||0)<0?'neg':''}" data-adjm="${esc(it.item)}" aria-label="تفاصيل التعديلات">${adjSign(NET.get(it.item)||0)}</button>`:'—'}</td></tr>`}).join('')}</tbody></table>`:'<div class="empty">غير متوفر</div>');
   };
   let t;$('#sq').oninput=()=>{clearTimeout(t);t=setTimeout(draw,150)};
   draw();dbBanner();
@@ -2937,6 +2940,21 @@ function parseItemRow(r){
   {const pp=num(col(r,'في الطبلية','بالطبلية','الطبلية','طبلية','طبالي'));if(pp>0)out.ppl=pp}
   return out;
 }
+// مرة وحدة: آخر لصقة انعملت قبل التحديث ما كانت تصفّر الأصناف الناقصة. هذي تسوي نفس اللي تسويه اللصقة، وتعلّم اللصقة إنها انعملت لها
+var zeroFixRan=false;
+async function oneTimeZeroFix(){
+  if(zeroFixRan||!loaded||!snaps.length)return;
+  const last=snaps[0];if(!last.id||last.zeroed)return;
+  const s=last.s||{};if(!Object.keys(s).length)return;
+  zeroFixRan=true;
+  try{
+    const W=[];
+    for(const it of coItems){if(!(it.stock>0)||!/^\d+$/.test(String(it.item))||(String(it.item) in s))continue;const o=overrides.get(it.item)||{};W.push({id:'i'+String(it.item).replace(/[^A-Za-z0-9_-]/g,'_'),doc:{...o,item:it.item,stock:0}})}
+    for(const w of W)await store.set('items',w.id,w.doc);
+    await store.update('snaps',last.id,{zeroed:true});
+    if(W.length)toast(`صفّرت ${W.length} صنف ما كانوا في آخر لصقة`);
+  }catch(err){zeroFixRan=false}
+}
 async function applyItemRows(parsed){
   let n=0,u=0,i=0;const W=[];
   for(const p of parsed){
@@ -2953,7 +2971,7 @@ async function applyItemRows(parsed){
   }else{for(const [id,d] of W){await store.set('items',id,d);if(++i%10===0)status('أحفظ… '+i+' من '+W.length)}}
   const snap={};for(const p of parsed){const k=String(p.no??'').trim();if(p.stock!=null&&k&&!k.includes('/')&&!k.startsWith('__'))snap[k]=p.stock}
   for(const k of zeroed)if(!(k in snap))snap[k]=0;
-  if(Object.keys(snap).length){const at=Date.now(),d=iso(at);try{await store.set('snaps',d+'_'+at,{date:d,at,by:myId||'',s:snap})}catch(err){toast('ما انحفظ الستوك لحالة الأصناف: '+(err&&err.message?err.message.slice(0,120):'خطأ'))}}
+  if(Object.keys(snap).length){const at=Date.now(),d=iso(at);try{await store.set('snaps',d+'_'+at,{date:d,at,by:myId||'',s:snap,zeroed:true})}catch(err){toast('ما انحفظ الستوك لحالة الأصناف: '+(err&&err.message?err.message.slice(0,120):'خطأ'))}}
   status('');return{n,u};
 }
 async function importItems(e){
@@ -3309,6 +3327,7 @@ function renderIssues(){$('#bandBA').hidden=true;
     if($('#isVPlay'))$('#isVPlay').onclick=async()=>{try{const d=f.voice.data||await loadVoice(f.id);if(d)new Audio(d).play()}catch(_){}};
     if($('#isVDel'))$('#isVDel').onclick=()=>{keep();f.voice=null;renderIssues()};
     $('#isSave').onclick=async()=>{keep();if(!f.t){toast('اختر نوع البلاغ أولاً');return}if(isForm&&isForm.t==='noinv'&&!isForm.id&&(isForm.lines||[]).length){return saveNoInvLines()}if(isForm&&isForm.t==='noinv'&&!isForm.pt){toast('اختر مندوب أو جملة أو ميني ماركت');return}if(!f.it){toast('اختر الصنف');return}if(f.t==='swap'&&!f.other){toast('اختر الصنف اللي انصرف بداله');return}{const qv=num(toLatin(String(f.qty||'').trim()));if(!(f.t==='diff'?(qv!=null&&qv!==0):(qv>0))){toast('اكتب الكمية');const qi=$('#isQty');if(qi){qi.classList.add('err');qi.focus()}return}}
+      if(f.t==='diff'&&!f.id){const qn=num(toLatin(String(f.qty||'').trim()));if(qn<0){const cur=(f.it.stock||0)+(adjNetMap(stockEvents()).get(f.it.item)||0);if(cur<=0){toast('الساب صفر، ما فيه شي ينعجز. إذا فيه زيادة سجلها بالموجب');return}}}
       if(f.t==='nearx'){const ex=$('#isExp')?.value||f.exp||'';if(!ex){toast('اختر تاريخ البضاعة');return}f.exp=ex}
       const q=String(f.qty||'').trim()===''?null:num(toLatin(String(f.qty)));const ftype=f.t==='diff'?(q<0?'short':'over'):f.t;const qAbs=(f.t==='diff'&&q!=null)?Math.abs(q):q;const hasP=f.t==='noinv'||f.t==='nearx';if(hasP&&f.pt==='rep'&&f.rep==null){toast('اختر المندوب');return}if(hasP&&f.pt==='cust'&&!f.cust){toast('اختر العميل');return}if(hasP&&f.pt==='mini'&&!(f.mini||'').trim()){toast('اكتب اسم الماركت');return}
       const prep=!hasP||!f.pt?-9:f.pt==='rep'?f.rep:f.pt==='cust'?-1:-2;const cname=f.pt==='cust'?f.cust.name:f.pt==='mini'?f.mini.trim():'';const toTxt=prep>=0?(repNames[prep]||''):prep===-1?('جملة · '+(f.cust.code?f.cust.code+' · ':'')+cname):prep===-2?('ميني ماركت · '+cname):'';
@@ -3635,7 +3654,7 @@ function quietEnd(){quietW=Math.max(0,quietW-1);if(!quietW&&quietDirty.size){con
 function apply(c,docs){
   if(c==='chat'){notifyNew('m',docs);chat=docs.sort((a,b)=>a.at-b.at);resolveNames();if(view==='chat')return renderChat(true);if(view==='home')return renderHome();return}
   if(c==='issues'){notifyNew('i',docs);issues=docs.sort((a,b)=>b.at-a.at);resolveNames();if(view==='issues'&&!isForm)return renderIssues();if(view==='home')return renderHome();return}
-  if(c==='snaps'){snaps=docs.sort((a,b)=>(b.at||0)-(a.at||0));if(view==='monitor'||view==='report')return renderMonitor();if(view==='home')return renderHome();return}
+  if(c==='snaps'){snaps=docs.sort((a,b)=>(b.at||0)-(a.at||0));oneTimeZeroFix();if(view==='monitor'||view==='report')return renderMonitor();if(view==='home')return renderHome();return}
   if(c==='audit'){notifyNew('a',docs);audit=docs.sort((a,b)=>b.at-a.at);resolveNames();if(view==='audit')return renderAudit();if(view==='home')return renderHome();if(!loaded)return;return renderLog()}
   if(c==='entries'){notifyNew('e',docs);entries=docs.sort((a,b)=>b.at-a.at);if(editing&&!entries.some(e=>e.id===editing)&&editEntry)closeCard();resolveNames()}
   if(c==='customers'){notifyNew('c',docs);setTimeout(resolveNames,0);customers=docs.sort((a,b)=>(a.code||'').localeCompare(b.code||'',undefined,{numeric:true})||a.name.localeCompare(b.name,'ar'));
