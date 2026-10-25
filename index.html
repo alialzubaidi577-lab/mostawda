@@ -1271,13 +1271,7 @@ html,body{margin:0;overflow-x:hidden}
 </form></div>
 
 
-<div id="lgn" class="wait"><form id="lgnF" autocomplete="on">
-  <h2>إدارة المستودع</h2>
-  <p>اكتب كلمة المرور حقتك</p>
-  <div><label for="lgP">كلمة المرور</label><input id="lgP" type="password" inputmode="text" autocomplete="current-password" required autofocus></div>
-  <div class="err" id="lgE"></div>
-  <button id="lgB" type="submit">دخول</button>
-</form></div>
+
 
 
 <header class="band"><div class="band-in">
@@ -1608,7 +1602,7 @@ const smUnit={'حبة':'حبة','باكت':'علبة','شدة':'علبة','كر�
 const ready=Promise.all([
   Promise.resolve(),
   Promise.resolve()
-]).then(()=>{loaded=true;rebuildCo();render();oneTimeZeroFix()}).catch(()=>{$('#dbInfo').textContent='تعذر التحميل';status('ما قدرت أحمّل الأصناف. حدّث الصفحة.',true)});
+]).then(()=>{loaded=true;rebuildCo();render()}).catch(()=>{$('#dbInfo').textContent='تعذر التحميل';status('ما قدرت أحمّل الأصناف. حدّث الصفحة.',true)});
 function priceOf(it,u){
   if(!it)return null;
   if(it.price[u]!=null)return{v:it.price[u],calc:false};
