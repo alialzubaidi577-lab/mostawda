@@ -1210,7 +1210,7 @@ td.nm[data-adjt]{cursor:pointer;text-decoration:underline dotted}
 .adjb{display:flex;gap:6px;flex-wrap:wrap;margin-inline-start:auto}
 .ovbox{border:1.5px solid #1e7d4f;border-radius:14px;margin:8px 0 10px;overflow:hidden;background:rgba(30,125,79,.07)}
 .ovdot{flex:0 0 auto;align-self:center;width:40px;height:40px;border-radius:50%;border:0;padding:0;cursor:pointer;background:radial-gradient(circle at 35% 30%,#7ef0b5 0,#1e9e62 45%,#1e7d4f 100%);box-shadow:0 0 0 3px rgba(30,125,79,.28),0 2px 6px rgba(0,0,0,.35)}.dtdot{width:40px;height:40px;font:inherit;font-size:8px;font-weight:800;color:#fff;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap}
-.sddiff{display:block;margin:4px auto 0;font:inherit;font-size:10px;font-weight:700;line-height:1.3;padding:2px 5px;border:1px solid var(--bad);border-radius:999px;background:transparent;color:var(--bad);white-space:nowrap;cursor:pointer}.sdt th{padding-left:2px;padding-right:2px;white-space:normal;font-size:11px}.sdt td{padding-left:2px;padding-right:2px}.sdt td.sdd{white-space:nowrap;font-size:11px}
+.sddiff{display:block;margin:4px auto 0;font:inherit;font-size:10px;font-weight:700;line-height:1.3;padding:2px 5px;border:1px solid var(--bad);border-radius:999px;background:transparent;color:var(--bad);white-space:nowrap;cursor:pointer}.sdt th{padding-left:2px;padding-right:2px;white-space:normal;font-size:11px}.sdt td{padding-left:2px;padding-right:2px}.sdt td.sdd{white-space:nowrap;font-size:11px}.sdfsel{display:block;max-width:100%;margin:3px auto 0;font:inherit;font-size:11px;font-weight:700;padding:1px 0 1px 2px;border:1px solid var(--gl);border-radius:6px;background:transparent;color:var(--brand);cursor:pointer}
 .ovpanel{position:fixed;z-index:950;width:min(360px,calc(100vw - 16px));max-height:60vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.45);direction:rtl}
 .ovpanel-h{padding:10px 14px;font-weight:800;color:#2ecc71;border-bottom:1px solid var(--line)}
 .ovpanel-r{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
@@ -3091,7 +3091,7 @@ function mergeBatches(list){const M=new Map();for(const p of list){let g=M.get(p
   if(p.stock!=null){g.sum=(g.sum||0)+p.stock;g.last=p.stock}
   if(p.exp&&p.stock>0)g.batches.push({exp:p.exp,qty:p.stock})}
   return [...M.values()].map(g=>{const {sum,last,...rest}=g;return{...rest,stock:g.batches.length?sum:last}})}
-function pasteRows(txt,html){
+function pasteRowsRaw(txt,html){
   let rows=[];
   if(/<table/i.test(html)){try{const d=new DOMParser().parseFromString(html,'text/html');rows=[...d.querySelectorAll('tr')].map(tr=>[...tr.querySelectorAll('th,td')].map(c=>c.textContent.replace(/\s+/g,' ').trim())).filter(r=>r.some(Boolean))}catch(_){rows=[]}}
   if(!rows.length){const lines=txt.replace(/\r/g,'').split('\n').filter(l=>l.trim());
@@ -3141,6 +3141,21 @@ function showPaste(box){
   $('#pasteGo').onclick=async()=>{$('#pasteGo').disabled=true;try{const {n,u}=await applyItemRows(parsed);toast(`انضاف ${n} صنف، وتحدّث ${u}`);box.innerHTML='';if(view==='stockup')go('stock')}catch(err){status('ما انحفظ كله. حاول مرة ثانية.',true);$('#pasteGo').disabled=false}};
   draw();
 }
+// تنظيف لصقة الستوك من الساب: سطر الدفعة الثانية (بدون كود) ياخذ كود الصنف اللي فوقه،
+// وإذا التواريخ شهر/يوم (مثل 04/18/2027) نقلبها إلى dd/mm عشان تنقرا صح
+function fixPasteRows(rows){
+  let last=null;
+  for(const r of rows){
+    if(String(r[0]??'').trim()){last=[r[0],r[1]];continue}
+    if(last&&(String(r[2]??'').trim()||String(r[5]??'').trim())){r[0]=last[0];if(!String(r[1]??'').trim())r[1]=last[1]}
+  }
+  const DT=/^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}$/;
+  let mdy=false,dmy=false;
+  for(const r of rows){const v=toLatin(String(r[5]??'').trim());if(!DT.test(v))continue;const p=v.split(/[\/\-.]/).map(Number);if(p[0]>12)dmy=true;else if(p[1]>12)mdy=true}
+  if(mdy&&!dmy)for(const r of rows){const v=toLatin(String(r[5]??'').trim());if(DT.test(v)){const p=v.split(/[\/\-.]/);r[5]=p[1]+'/'+p[0]+'/'+p[2]}}
+  return rows;
+}
+function pasteRows(txt,html){return fixPasteRows(pasteRowsRaw(txt,html))}
 async function xlsxSave(sheet,data,filename){
   if(!data.length){status('ما فيه بيانات تصدّرها.',true);return}
   try{const dl=await window.claude?.use?.('downloads');if(!dl){status('التصدير غير متاح في هذا العرض.',true);return}
@@ -4025,26 +4040,35 @@ function renderStockDates(){
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>
     <div class="field" style="margin-bottom:10px"><input id="sdq" type="search" autocomplete="off" placeholder="ابحث: كود أو اسم الصنف" aria-label="ابحث في التواريخ"></div>
     <div class="tbl-wrap stbl" id="sdLines"></div>`;
+  let sdMonthSel='';
   const draw=()=>{
     closeSdPop();
     const q=wq(($('#sdq')?.value||'').trim());
     const NET=adjNetMap(stockEvents());
+    const months=[...new Set(dtGroups().flatMap(g=>g.rows.map(e=>String(e.expiry).slice(0,7))))].filter(m=>/^\d{4}-\d{2}$/.test(m)).sort();
+    if(sdMonthSel&&!months.includes(sdMonthSel))sdMonthSel='';
     const body=[];
     for(const g of dtGroups()){
       const it=coItems.find(i=>i.item===g.item)||{};
       if(q&&!(String(g.item).includes(q)||String(g.name).includes(q)))continue;
-      const n=g.rows.length;
+      const rows=g.rows.filter(e=>!sdMonthSel||String(e.expiry).slice(0,7)===sdMonthSel);
+      if(!rows.length)continue;
+      const n=rows.length;
       const total=g.rows.reduce((t,e)=>t+(Number(e.cartons??e.qty)||0),0);
       const eff=(Number(it.stock)||0)+(NET.get(g.item)||0);
       const diff=eff-total;
       const dbtn=diff?`<button type="button" class="sddiff" data-sddiff="${esc(g.item)}">فرق ${diff>0?'+':'−'}${fmt(Math.abs(diff))}</button>`:'';
-      g.rows.forEach((e,idx)=>{
+      rows.forEach((e,idx)=>{
         const qty=Number(e.cartons??e.qty)||0;
         body.push(`<tr><td class="mono">${esc(g.item)}</td><td class="nm">${esc(g.name)}</td><td class="sdd">${toDisp(e.expiry)}</td><td class="big">${fmt(qty)}</td>${idx===0?`<td class="big" rowspan="${n}">${fmt(total)}</td><td class="big" rowspan="${n}">${fmt(eff)}${dbtn}</td>`:''}</tr>`);
       });
     }
-    $('#sdLines').innerHTML=body.length?`<table class="tbl stc sdt" style="font-size:12px;table-layout:fixed;width:100%"><colgroup><col style="width:13%"><col style="width:25%"><col style="width:20%"><col style="width:11%"><col style="width:12%"><col style="width:19%"></colgroup><thead><tr><th>الكود</th><th>الصنف</th><th>التاريخ</th><th>الكمية</th><th>المجموع</th><th>المستودع</th></tr></thead><tbody>${body.join('')}</tbody></table>`:'<div class="empty">ما فيه تواريخ مسجلة بعد</div>';
+    const monthOpts=months.map(m=>`<option value="${m}"${m===sdMonthSel?' selected':''}>${m.slice(5,7)}/${m.slice(2,4)}</option>`).join('');
+    const head=`<thead><tr><th>الكود</th><th>الصنف</th><th>التاريخ<br><select id="sdMonth" class="sdfsel" aria-label="فلترة التاريخ حسب الشهر"><option value="">الكل</option>${monthOpts}</select></th><th>الكمية</th><th>المجموع</th><th>المستودع</th></tr></thead>`;
+    const rowsHtml=body.length?body.join(''):`<tr><td colspan="6" class="empty">${sdMonthSel?'ما فيه تواريخ في هذا الشهر':'ما فيه نتيجة'}</td></tr>`;
+    $('#sdLines').innerHTML=months.length?`<table class="tbl stc sdt" style="font-size:12px;table-layout:fixed;width:100%"><colgroup><col style="width:13%"><col style="width:25%"><col style="width:20%"><col style="width:11%"><col style="width:12%"><col style="width:19%"></colgroup>${head}<tbody>${rowsHtml}</tbody></table>`:'<div class="empty">ما فيه تواريخ مسجلة بعد</div>';
     $('#sdLines').querySelectorAll('[data-sddiff]').forEach(b=>b.onclick=()=>openSdPop(b.dataset.sddiff,b));
+    const sel=$('#sdMonth');if(sel)sel.onchange=()=>{sdMonthSel=sel.value;draw()};
   };
   let t;$('#sdq').oninput=()=>{clearTimeout(t);t=setTimeout(draw,150)};
   draw();
