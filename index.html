@@ -517,6 +517,14 @@ body.peeking *{pointer-events:none}
 .xgrid .xn{text-align:center}
 .tbl.xgrid{direction:ltr}
 .xgrid .xn{direction:rtl}
+.xgrid .xv{display:block;text-align:center;padding:7px 3px;font-size:13px;min-width:0;overflow-wrap:anywhere}
+.xgrid thead th{white-space:normal;line-height:1.2;font-size:12px;padding:6px 2px}
+.tbl.drg{table-layout:fixed;width:100%}
+.tbl.drg th:nth-child(1),.tbl.drg td:nth-child(1){width:18%}
+.tbl.drg th:nth-child(2),.tbl.drg td:nth-child(2){width:28%}
+.tbl.drg th:nth-child(3),.tbl.drg td:nth-child(3){width:12%}
+.tbl.drg th:nth-child(4),.tbl.drg td:nth-child(4){width:18%}
+.tbl.drg th:nth-child(5),.tbl.drg td:nth-child(5){width:24%}
 .stkg.g3w{grid-template-columns:repeat(3,minmax(0,1fr))}
 .stkg.g3w>div{min-width:0}
 .stkg.g3w b{font-size:15px;white-space:nowrap}
@@ -1781,10 +1789,10 @@ function render(){
       <div class="field rdw" style="flex:0 0 auto;min-width:0">${dPk('rd',retDate,'التاريخ')}</div></div>
     <div class="field" style="min-width:0"><div class="search"><input id="q2" type="search" inputmode="search" autocomplete="off" aria-label="الصنف" placeholder="الصنف: باركود أو كود أو اسم" style="border:1.5px solid var(--line)">${view==='ret'?`<button type="button" id="retPlus" aria-label="أضف صنف" style="flex:0 0 auto;width:44px;height:40px;border:0;border-radius:12px;background:var(--tag);color:var(--tag-ink);font:inherit;font-size:26px;font-weight:700;line-height:1;cursor:pointer">+</button>`:''}<label class="cam camw" aria-label="تصوير الباركود"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg><input type="file" accept="image/*" capture="environment" class="camin"></label></div></div>
   </section>`:'')+`<div id="hits" class="hits" hidden></div><section id="card" class="card" hidden></section><div id="retBottom"></div>`+
-    (view==='items'?`<div class="row"><button class="btn" type="button" id="newItem">+ صنف جديد</button><button class="btn" type="button" id="pasteBtn">لصق من Excel</button><div class="pmwrap"><button class="btn ghost" type="button" id="pmBtn" aria-haspopup="true" aria-expanded="false">السعر: ${itPriceMode==='kashf'?'كاشف':'جملة'}</button><div id="pmMenu" class="pmmenu" hidden><button type="button" data-pm="wh" aria-pressed="${itPriceMode!=='kashf'}">جملة</button><button type="button" data-pm="kashf" aria-pressed="${itPriceMode==='kashf'}">كاشف</button></div></div></div><div id="pasteBox"></div><div id="itemList"></div>`
+    (view==='items'?`<div class="row"><button class="btn" type="button" id="newItem">+ صنف جديد</button><button class="btn" type="button" id="pasteBtn">لصق من Excel</button><button class="btn ghost" type="button" id="sugBtn">اقتراح الأسعار</button><div class="pmwrap"><button class="btn ghost" type="button" id="pmBtn" aria-haspopup="true" aria-expanded="false">السعر: ${itPriceMode==='kashf'?'كاشف':'جملة'}</button><div id="pmMenu" class="pmmenu" hidden><button type="button" data-pm="wh" aria-pressed="${itPriceMode!=='kashf'}">جملة</button><button type="button" data-pm="kashf" aria-pressed="${itPriceMode==='kashf'}">كاشف</button></div></div></div><div id="pasteBox"></div><div id="itemList"></div>`
     :`</div><div class="logwrap">${searchBox()}<section class="log" id="log"></section></div>`)+(view==='items'?'</div>':'')+'</div>';
   bindSearchBox();
-  if(view==='items'){$('#newItem').onclick=()=>itemEditor(null);$('#pmBtn').onclick=e=>{e.stopPropagation();const m=$('#pmMenu');m.hidden=!m.hidden;$('#pmBtn').setAttribute('aria-expanded',String(!m.hidden))};$('#pmMenu').querySelectorAll('[data-pm]').forEach(b=>b.onclick=e=>{e.stopPropagation();itPriceMode=b.dataset.pm;window.pasteHeadRefresh?.();$('#pmMenu').hidden=true;$('#pmBtn').setAttribute('aria-expanded','false');$('#pmBtn').textContent='السعر: '+(itPriceMode==='kashf'?'كاشف':'جملة');drawItemList()});$('#pasteBtn').onclick=()=>showPaste($('#pasteBox'));drawItemList()}
+  if(view==='items'){$('#newItem').onclick=()=>itemEditor(null);$('#pmBtn').onclick=e=>{e.stopPropagation();const m=$('#pmMenu');m.hidden=!m.hidden;$('#pmBtn').setAttribute('aria-expanded',String(!m.hidden))};$('#pmMenu').querySelectorAll('[data-pm]').forEach(b=>b.onclick=e=>{e.stopPropagation();itPriceMode=b.dataset.pm;window.pasteHeadRefresh?.();$('#pmMenu').hidden=true;$('#pmBtn').setAttribute('aria-expanded','false');$('#pmBtn').textContent='السعر: '+(itPriceMode==='kashf'?'كاشف':'جملة');drawItemList()});$('#pasteBtn').onclick=()=>showPaste($('#pasteBox'));$('#sugBtn').onclick=()=>showSuggest();drawItemList()}
   if(V.cust&&!cust)status('اختر العميل أول من فوق.');
   if(view==='wh'){const pb=$('#whPostBox');pb.onclick=async e=>{const b=e.target;
       if(b.id==='whPost'){const n=logRows().filter(c=>whSel.has(c.id)).length;if(!logRows().length){toast('ما فيه جرد للترحيل');return}if(!n){toast('حدّد الأصناف أو «الكل» أول');return}pb.innerHTML=`<span class="hint">ترحيل ${n} سطر؟</span> <button class="btn ap sm" type="button" data-py>رحّل</button><button class="btn ghost sm" type="button" data-pn>لا</button>`;return}
@@ -1966,10 +1974,14 @@ function renderDrLog(){
   drRefresh();
 }
 function drRowHtml(r,i){
-  return `<tr><td><input class="xc" inputmode="numeric" autocomplete="off" data-drc="${i}" value="${esc(r.c)}"></td><td class="nm" data-drn="${i}"></td><td><input class="xc" inputmode="decimal" autocomplete="off" data-drq="${i}" value="${esc(r.q)}"></td><td class="big" data-drp="${i}">—</td><td class="big" data-dra="${i}">—</td></tr>`;
+  // نفس شكل لصق المخزون: الكود والكمية خانات تكتب فيها، والصنف والأسعار تجي من البيانات
+  return `<tr><td><input class="xc" inputmode="numeric" autocomplete="off" data-drc="${i}" value="${esc(r.c)}"></td><td class="nm"><span class="xv xn" data-drn="${i}"></span></td><td><input class="xc" inputmode="decimal" autocomplete="off" data-drq="${i}" value="${esc(r.q)}"></td><td><span class="xv" data-drp="${i}">—</span></td><td><span class="xv" data-dra="${i}">—</span></td></tr>`;
 }
+// نفس عدد الخانات الفاضية اللي يبينها لصق المخزون
+function drPad(){while(drGrid.length<12)drGrid.push({c:'',q:''})}
 function drGridHtml(){
-  return `<div class="tbl-wrap pprev"><table class="tbl ptpl xgrid drtab drwide drgold"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody id="drGridBody">${drGrid.map(drRowHtml).join('')}</tbody></table></div><div id="drErr" class="drerr"></div>`;
+  drPad();
+  return `<div class="tbl-wrap pprev"><table class="tbl ptpl xgrid drg"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody id="drGridBody">${drGrid.map(drRowHtml).join('')}</tbody></table></div><div id="drErr" class="drerr"></div>`;
 }
 function drRowCheck(r){
   const c=toLatin(r.c||'').trim(),q=toLatin(r.q||'').trim();
@@ -2023,7 +2035,7 @@ function drPaste(e){
     drGrid[start+k]={c:p[0]||'',q:p.length>1?p[p.length-1]:''};
   });
   drGrid=drGrid.filter(Boolean);
-  const body=$('#drGridBody');if(body)body.innerHTML=drGrid.map(drRowHtml).join('');
+  drPad();const body=$('#drGridBody');if(body)body.innerHTML=drGrid.map(drRowHtml).join('');
   drGridEnsure();drPrevRender();
 }
 function drRefresh(){
@@ -2240,7 +2252,7 @@ function renderDHub(){$('#bandBA').hidden=true;
   $('#main').innerHTML=`<div class="sqgrid">${sq('near',nameOf('near'),nearOpen(nearRows(100,'all')).length,'خلال 100 يوم','var(--bad)')}${sq('dates',nameOf('dates'),dtGroups().length,'صنف عنده تواريخ','var(--t-exp)')}${sq('drload',VIEWS.drload.t,dloads.filter(l=>l.date===drTodayIso()).length,'تحميل اليوم','var(--t-exp)')}</div>`;
   $('#main').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go))}
 
-const HOME_KEYS=['issues','inv','ret','itemstatus','items','customers','dhub','exp','chat','audit'];
+const HOME_KEYS=['issues','inv','ret','itemstatus','items','customers','dhub','drload','exp','chat','audit'];
 const NAME_DEFAULTS={issues:'البلاغات',ret:'المرتجعات',inv:'المخزون والجرد',items:'البيانات',customers:'العملاء',dhub:'التواريخ القريبة والجديدة',near:'التواريخ القريبة',dates:'تواريخ الأصناف',exp:'الإكسباير',chat:'الدردشة',audit:'السجل'};
 function nameOf(k){return homeLabels()[k]||NAME_DEFAULTS[k]||k}
 function applyNames(){const L=homeLabels();for(const k of Object.keys(NAME_DEFAULTS)){if(L[k]&&VIEWS[k])VIEWS[k].t=L[k]}}
@@ -2318,6 +2330,7 @@ function renderHome(){$('#bandBA').hidden=true;
       ${sq('customers','العملاء',customers.length,'عميل','var(--muted)')}
       ${sq('itemstatus','حالة الأصناف',itemStatusRows()?.filter(r=>r.st!=='moving').length||0,'جديد · رجع · صفر من قبل','var(--t-st)')}
       ${sq('dhub','التواريخ القريبة والجديدة',nearOpen(nearRows(100,'all')).length,'','var(--bad)')}
+      ${sq('drload','تحميل المناديب',dloads.filter(l=>l.date===drTodayIso()).length,'تحميل اليوم','var(--t-exp)')}
       ${sq('exp','الإكسباير',cnt('exp'),'سطر هذا الشهر','var(--t-exp)')}
       ${(()=>{const u=chatUnread();return sq('chat','الدردشة',u||'💬',u?'رسالة جديدة':'كلّم '+(myId&&isAdminMe()?'أمين المستودع':'أبو عادل'),'#2e86de').replace('class="sq"',u?'class="sq sqhot"':'class="sq"')})()}
       ${sq('audit','السجل',audit.filter(a=>AUD_SHOW.has(a.kind)&&Date.now()-a.at<86400000).length,'حذف وتعديل · آخر 24 ساعة','var(--bad)')}
@@ -3417,31 +3430,33 @@ function pasteRowsRaw(txt,html){
   return rows.map(r=>[...map.map(i=>i>=0&&i!=null?(r[i]??''):''),(dIdx>=0?(r[dIdx]??''):(r.find(isDate)??''))]);
 }
 function showPaste(box){
-  let grid=[];const H=['الكود','الصنف','الكمية','سعر الكشف','سعر الجملة','طبالي','التاريخ'];
+  let grid=[];const H=['الكود','الصنف','الكمية','سعر الكشفان','سعر الجملة','طبالي','التاريخ'];
+  // صفحة البيانات: يظهر عمود السعر اللي تشتغل عليه (كشفان أو جملة)، والعمود الثاني يبقى محفوظ بدون ما يختلط
+  const hideCol=c=>view==='items'&&((c===3&&itPriceMode!=='kashf')||(c===4&&itPriceMode==='kashf'));
   box.innerHTML=`<div class="card"><h3>لصق المخزون من Excel</h3>
     <p class="hint">اضغط أول خانة تحت «الكود» والصق. تقدر بعد تكتب أو تعدل في أي خانة. عمود «التاريخ» اختياري: إذا فيه تاريخ لكل سطر ينحفظ كدفعة بتاريخها، والستوك يصير مجموع الدفعات.</p>
-    <div class="tbl-wrap pprev"><table class="tbl ptpl xgrid"><thead><tr>${H.map((h,c)=>`<th${c===3&&view==='items'?' hidden':''} data-h="${c}">${c===4&&view==='items'?itemsPriceLbl():h}</th>`).join('')}</tr></thead><tbody id="xg"></tbody></table></div>
+    <div class="tbl-wrap pprev"><table class="tbl ptpl xgrid"><thead><tr>${H.map((h,c)=>`<th${hideCol(c)?' hidden':''} data-h="${c}">${h}</th>`).join('')}</tr></thead><tbody id="xg"></tbody></table></div>
     <div id="pastePrev"></div>
     <div class="row"><button class="btn ap" type="button" id="pasteGo" disabled style="flex:1">اعتماد</button><button class="btn ghost" type="button" id="pasteClr">مسح</button><button class="btn ghost" type="button" id="pasteX">إغلاق</button></div></div>`;
-  const toParsed=()=>{const out=[];for(const r of grid){if(!r||!r.some(v=>String(v||'').trim()))continue;const o={};H.forEach((h,c)=>{o[h]=String(r[c]??'').replace(/\t/g,' ').trim()});if(view==='items'){const pv=o['سعر الجملة'];o['سعر الكشف']='';o['سعر الجملة']='';if(itPriceMode==='kashf')o['سعر الكشف']=pv;else o['سعر الجملة']=pv}const p=parseItemRow(o);if(p){p.exp=parseD(o['التاريخ']||'');out.push(p)}}return mergeBatches(out)};
+  const toParsed=()=>{const out=[];for(const r of grid){if(!r||!r.some(v=>String(v||'').trim()))continue;const o={};H.forEach((h,c)=>{o[h]=String(r[c]??'').replace(/\t/g,' ').trim()});const p=parseItemRow(o);if(p){p.exp=parseD(o['التاريخ']||'');out.push(p)}}return mergeBatches(out)};
   let parsed=[];
   const summary=()=>{parsed=toParsed();const nb=parsed.reduce((t,p)=>t+(p.batches?.length||0),0);const known=parsed.filter(p=>coItems.some(i=>i.item===p.no)).length,nw=parsed.filter(p=>!coItems.some(i=>i.item===p.no)&&p.name).length;
     $('#pasteGo').disabled=!(known+nw);$('#pastePrev').innerHTML=parsed.length?`<p class="hint"><b>${parsed.length}</b> صنف · <b>${nw}</b> جديد · <b>${known}</b> بيتحدّث${nb?` · <b>${nb}</b> دفعة بتاريخ`:''}</p>${known+nw?'':'<p class="hint" style="color:var(--bad)">ما قدرت أقرا أي صنف. الأصناف الجديدة لازم يكون معها اسم الصنف، والأصناف القديمة لازم يكون كودها مطابق.</p>'}`:''};
   // صفحة البيانات: عمود السعر يتبع الخيار اللي فوق (كشفان أو جملة)
-  function itemsPriceLbl(){return itPriceMode==='kashf'?'سعر الكشفان':'سعر الجملة'}
-  window.pasteHeadRefresh=()=>{const th=box.querySelector('th[data-h="4"]');if(th&&view==='items')th.textContent=itemsPriceLbl()};
+  window.pasteHeadRefresh=()=>{box.querySelectorAll('th[data-h]').forEach(th=>{th.hidden=hideCol(Number(th.dataset.h))});draw()};
   // سعر الكشفان (عمود 3) وسعر الجملة (عمود 4) ينحفظون على الصنف لحالهم، بدون ما يلمسون الستوك
   const savePriceCol=async c=>{
-    const key=view==='items'?(itPriceMode==='kashf'?'كاشفان':'كرتون'):(c===3?'كاشفان':'كرتون'),W=[];let n=0,miss=0;
+    const key=c===3?'كاشفان':'كرتون',W=[];let n=0,miss=0;
     for(const r of grid){if(!r||!String(r[0]??'').trim()||num(r[c])==null)continue;
       const no=toLatin(String(r[0]).trim()).replace(/\s/g,'');
       if(!coItems.some(x=>x.item===no)){miss++;continue}
       const o=overrides.get(no)||{};W.push(['i'+no.replace(/[^A-Za-z0-9_-]/g,'_'),{...o,item:no,price:{...(o.price||{}),[key]:num(r[c])}}]);n++}
-    for(const [id,d] of W)await store.set('items',id,d);
+    // كل الأصناف تنحفظ بدفعات (مثل الاعتماد) بدل ما تنحفظ واحد واحد
+    if(W.length)await store.batch(W.map(([id,d])=>({k:'set',c:'items',id,d})));
     if(n||miss)toast(`انحفظ ${c===3?'سعر الكشفان':'سعر الجملة'} لـ ${n} صنف${miss?'، وما انحفظ '+miss+' (الكود ما هو موجود)':''}`);
   };
   const draw=()=>{const n=Math.max(grid.length+5,12);
-    $('#xg').innerHTML=Array.from({length:n},(_,r)=>`<tr>${H.map((_,c)=>`<td${c===3&&view==='items'?' hidden':''}><input class="xc${c===1?' xn':''}${c===6?' xd':''}" data-r="${r}" data-c="${c}" value="${esc(grid[r]?.[c]??'')}" ${c===1||c===6?'':'inputmode="decimal"'} autocomplete="off"></td>`).join('')}</tr>`).join('');summary()};
+    $('#xg').innerHTML=Array.from({length:n},(_,r)=>`<tr>${H.map((_,c)=>`<td${hideCol(c)?' hidden':''}><input class="xc${c===1?' xn':''}${c===6?' xd':''}" data-r="${r}" data-c="${c}" value="${esc(grid[r]?.[c]??'')}" ${c===1||c===6?'':'inputmode="decimal"'} autocomplete="off"></td>`).join('')}</tr>`).join('');summary()};
   const xg=$('#xg');
   xg.addEventListener('paste',e=>{const t=e.target.closest('.xc');if(!t)return;const cd=e.clipboardData||window.clipboardData;const txt=cd?.getData('text')||'',html=cd?.getData('text/html')||'';
     if(!/[\t\n]/.test(txt)&&!/<table/i.test(html))return;e.preventDefault();
@@ -4604,7 +4619,32 @@ function showPltWa(box){
 
 var ilq='';
 let itPriceMode='wh';
-function ipr(it){return itPriceMode==='kashf'?(it.price['كاشفان']??null):(it.price['كرتون']??null)}
+// مفتاح الشبه: الاسم بدون العبوة + العبوة نفسها (مثل 16x65g). نفس النكهة ونفس العبوة يعتبرون نفس المنتج
+function sugKey(name){const s=norm(name).replace(/\s*\(.*?\)\s*/g,' ');const m=s.match(/(\d+(?:\s*[x×*]\s*\d+)+)\s*(g|جم|جرام)?/i);const pack=m?m[1].replace(/\s/g,'').replace(/[×*]/g,'x')+'g':'';const base=(m?s.replace(m[0],' '):s).replace(/\s+/g,' ').trim();return base+'|'+pack}
+// الأصناف الفاضية: إذا كل المشابهين لها سعر واحد ينقترح، إذا فيه أسعار مختلفة تنراجع، إذا ما فيه مشابه تبقى
+function sugPlan(kind){
+  const groups=new Map();
+  for(const it of coItems){const v=it.price?.[kind];if(!(v>0))continue;const k=sugKey(it.name);let g=groups.get(k);if(!g){g=new Set();groups.set(k,g)}g.add(v)}
+  const fill=[],review=[],none=[];
+  for(const it of coItems){const v=it.price?.[kind];if(v>0)continue;const g=groups.get(sugKey(it.name));
+    if(!g)none.push(it);else if(g.size===1)fill.push({it,val:[...g][0]});else review.push(it)}
+  return{fill,review,none}
+}
+function showSuggest(){
+  const kind=itPriceMode==='kashf'?'كاشفان':'كرتون',box=$('#pasteBox');
+  const P=sugPlan(kind);
+  box.innerHTML=`<div class="card"><h3>اقتراح الأسعار الفاضية (${kind==='كاشفان'?'كاشف':'جملة'})</h3>
+    <p class="hint">الأصناف اللي لها نفس النكهة ونفس العبوة، وسعرها واحد، ينقترح لها نفس السعر. اللي فيها أسعار مختلفة أو ما لها مشابه تبقى فاضية.</p>
+    <p class="hint"><b>${P.fill.length}</b> صنف ينقترح له سعر · <b>${P.review.length}</b> يحتاج مراجعة (أسعار مختلفة) · <b>${P.none.length}</b> ما له مشابه</p>
+    ${P.fill.length?`<div class="tblwrap"><table class="tbl iltab"><thead><tr><th>الكود</th><th>اسم الصنف</th><th>السعر المقترح</th></tr></thead><tbody>${P.fill.map(s=>`<tr><td class="mono">${esc(s.it.item)}</td><td class="nm">${esc(s.it.name)}</td><td>${money(s.val)}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <div class="row"><button class="btn ap" type="button" id="sugGo" ${P.fill.length?'':'disabled'} style="flex:1">اعتماد الاقتراحات</button><button class="btn ghost" type="button" id="sugX">إغلاق</button></div></div>`;
+  $('#sugX').onclick=()=>{box.innerHTML=''};
+  const go=$('#sugGo');if(go)go.onclick=async()=>{go.disabled=true;try{
+    await store.batch(P.fill.map(s=>{const no=String(s.it.item),o=overrides.get(no)||{};return{k:'set',c:'items',id:'i'+no.replace(/[^A-Za-z0-9_-]/g,'_'),d:{...o,item:no,price:{...(s.it.price||{}),[kind]:s.val}}}}));
+    toast(`انحفظ سعر ${P.fill.length} صنف`);box.innerHTML='';drawItemList()}catch(err){toast('ما انحفظ، حاول مرة ثانية');go.disabled=false}};
+}
+// السعر الصفر يعني ما فيه سعر، فيظهر «—» مثل الأصناف اللي ما لها سعر
+function ipr(it){const v=itPriceMode==='kashf'?(it.price['كاشفان']??null):(it.price['كرتون']??null);return v>0?v:null}
 function drawItemList(){const box=$('#itemList');if(!box)return;
   const v=wq(ilq).trim(),t=v.split(' ').filter(Boolean);
   const L=coItems.filter(it=>!t.length||it.item.includes(v)||t.every(w=>tokOk(it,w))).sort((a,b)=>a.name.localeCompare(b.name,'ar'));
