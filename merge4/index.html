@@ -1941,7 +1941,7 @@ function drParse(txt){
   }
   return{items,errs};
 }
-// saved loads of the chosen driver: one day if picked, otherwise the period; "المجموع" = all of that driver's loads for the item
+// saved loads of the chosen driver: one day if picked, otherwise the period; "المجموع" = the same period's quantity for the item
 function drAgg(q){
   const v=wq(String(q||'').trim()),toks=v.split(' ').filter(Boolean),M=new Map(),ALL=new Map();
   for(const l of dloads){
@@ -2108,7 +2108,7 @@ function drMergedTable(ls,m){
 }
 function drResRender(){
   const box=$('#drRes');if(!box)return;
-  const rows=drAgg(drQ),all=r3(rows.reduce((a,r)=>a+r.all,0));
+  const rows=drAgg(drQ),all=r3(rows.reduce((a,r)=>a+r.q,0));
   const searching=!!drQ.trim(),m=v=>v==null?'—':money(v);
   let amtTot=0,body;
   if(searching){
