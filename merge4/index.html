@@ -524,7 +524,8 @@ body.peeking *{pointer-events:none}
 .drhead>b{white-space:nowrap;min-width:0}
 .drhead>.btn{flex:none}
 .drord{font-size:12px;color:var(--muted);margin:2px 0 6px}
-.drnum{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--surface);font-size:13px;color:var(--ink)}
+.drnum{flex:1;min-width:0;font-size:13px;color:var(--ink)}
+.drload-block>.drhead{padding:8px 10px 4px}
 .drnum b{font-weight:700}
 .drlrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:13px;border-bottom:1px solid color-mix(in srgb,currentColor 15%,transparent)}
 .xgrid thead th{white-space:normal;line-height:1.2;font-size:12px;padding:6px 2px}
@@ -854,6 +855,35 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .drtab.drgold th:nth-child(4),.drtab.drgold td:nth-child(4){width:18%}
 .drtab.drgold th:nth-child(5),.drtab.drgold td:nth-child(5){width:22%}
 .drtab.drgold td.nm{text-align:right}
+.tbl.simt.drtab td.big{color:#e67e22;font-weight:700}
+.tbl.simt.drtab{font-size:12px}
+.tbl.simt.drtab th,.tbl.simt.drtab td{padding:5px 2px}
+.tbl.simt.drtab td.mono{font-size:11px;white-space:nowrap}
+.tbl.simt.drtab th:nth-child(1),.tbl.simt.drtab td:nth-child(1){width:19%}
+.tbl.simt.drtab th:nth-child(2),.tbl.simt.drtab td:nth-child(2){width:31%}
+.tbl.simt.drtab th:nth-child(3),.tbl.simt.drtab td:nth-child(3){width:14%}
+.tbl.simt.drtab th:nth-child(4),.tbl.simt.drtab td:nth-child(4){width:16%}
+.tbl.simt.drtab th:nth-child(5),.tbl.simt.drtab td:nth-child(5){width:20%}
+.drpage{display:flex;flex-direction:column;gap:8px;padding-top:8px}
+.drmw{flex-wrap:wrap}
+.drmw .applybar{flex:1 1 100%}
+.drmw .mdate select{flex:1 1 auto;min-width:0;max-width:none;border-radius:0 10px 10px 0}
+.tbl.stc.drtab th{white-space:normal;word-break:keep-all;line-height:1.25}
+.drmw .applybar .hint{font-size:13px;color:var(--band-ink);white-space:nowrap}
+.tbl.stc.drtab{table-layout:fixed;width:100%;font-size:13px}
+.tbl.stc.drtab th,.tbl.stc.drtab td{padding:6px 3px;font-size:13px;vertical-align:middle}
+.tbl.stc.drtab td.mono{font-size:12px;white-space:nowrap}
+.tbl.stc.drtab td.nm{white-space:normal;min-width:0}
+.tbl.stc.drtab td.big{color:#e67e22;font-weight:800}
+.tbl.stc.drtab th:nth-child(1),.tbl.stc.drtab td:nth-child(1){width:17%}
+.tbl.stc.drtab th:nth-child(2),.tbl.stc.drtab td:nth-child(2){width:33%}
+.tbl.stc.drtab th:nth-child(3),.tbl.stc.drtab td:nth-child(3){width:13%}
+.tbl.stc.drtab th:nth-child(4),.tbl.stc.drtab td:nth-child(4){width:15%}
+.tbl.stc.drtab th:nth-child(5),.tbl.stc.drtab td:nth-child(5){width:22%}
+.tbl.simt.drtab th:nth-child(2),.tbl.simt.drtab td:nth-child(2){width:33%}
+.tbl.simt.drtab th:nth-child(3),.tbl.simt.drtab td:nth-child(3){width:13%}
+.tbl.simt.drtab th:nth-child(4),.tbl.simt.drtab td:nth-child(4){width:16%}
+.tbl.simt.drtab th:nth-child(5),.tbl.simt.drtab td:nth-child(5){width:21%}
 .drtab.drwide .drdy{gap:3px}
 .drtab.drwide .drdb{font-size:11px!important;padding:1px 4px!important}
 .drscroll{direction:ltr}
@@ -1379,6 +1409,8 @@ html,body{margin:0;overflow-x:hidden}
   </form>
   <div class="bandba" id="bandBA" hidden></div>
   <div class="monthw" id="monthWrap" hidden><span class="mdate"><select id="month" aria-label="الشهر"></select><span class="yrbtn" title="السنة"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><select id="yrSel" aria-label="اختر السنة"></select></span></span><span id="whDateWrap" hidden class="whd"><label for="wd">تاريخ الجرد</label><span class="wdbox"><input id="wd" class="dfield" type="text" inputmode="numeric" autocomplete="off" placeholder="يوم/شهر/سنة"><span class="wdarrow" aria-hidden="true">▾</span><select id="wdSel" aria-label="اختر تاريخ الجرد"></select></span></span><span id="applyBar" class="applybar" hidden></span><button class="btn sm" type="button" id="toListTop" hidden style="background:var(--tag);color:var(--tag-ink);margin-inline-start:auto">قائمة المرتجعات ←</button><button class="btn sm" type="button" id="newRetTop" hidden style="background:var(--tag);color:var(--tag-ink);padding:4px 10px">+ مرتجع جديد</button></div>
+  <div class="monthw drmw" id="drRepWrap" hidden></div>
+  <div class="monthw drmw" id="drMonthWrap" hidden><span class="mdate"><select id="drDaySel" aria-label="اليوم"></select><span class="yrbtn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span></span><span id="drApply" class="applybar"></span></div>
   <p class="status" id="status" aria-live="polite"></p>
 </div></header>
 
@@ -1782,7 +1814,7 @@ function render(){
   $('#vTitle').textContent=V.t;try{document.title=view==='home'?'إدارة المستودع':V.t}catch(_){}$('#back').hidden=view==='home';
   $('#whDateWrap').hidden=view!=='wh'&&view!=='result';
   const upTo=upTarget();$('#up').hidden=!upTo;if(upTo)$('#up').textContent='→ '+VIEWS[upTo].t;
-  $('#custBtn').hidden=!V.cust;$('#searchForm').hidden=!V.search;$('#monthWrap').hidden=!V.month;$('#toListTop').hidden=view!=='ret';$('#applyBar').hidden=view!=='stock';if(view==='stock')$('#applyBar').innerHTML=applyBarHtml();$('#toResTop').hidden=view!=='wh';$('#newRetTop').hidden=view!=='retlist';if(V.month)drawMonth();
+  $('#custBtn').hidden=!V.cust;$('#searchForm').hidden=!V.search;$('#monthWrap').hidden=!V.month;$('#drMonthWrap').hidden=view!=='drlog';$('#drRepWrap').hidden=view!=='drlog';if(view!=='drlog')$('#drRepWrap').innerHTML='';$('#toListTop').hidden=view!=='ret';$('#applyBar').hidden=view!=='stock';if(view==='stock')$('#applyBar').innerHTML=applyBarHtml();$('#toResTop').hidden=view!=='wh';$('#newRetTop').hidden=view!=='retlist';if(V.month)drawMonth();
   if(view==='items'&&!$('#q').value)ilq='';$('#q').placeholder=view==='items'?'ابحث بالاسم أو الكود أو الوزن (12 جرام)':'باركود، رقم الصنف أو جزء من الاسم';
   setCust(cust);
   const m=$('#main');
@@ -1989,17 +2021,13 @@ function renderDrPaste(){
 function renderDrLog(){
   $('#bandBA').hidden=true;
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>
-    <section class="drbox">
-      <div class="field"><label for="drRepSel">المندوب</label><select id="drRepSel">${drRepOpts()}</select></div>
-      <div class="drrow" style="direction:ltr">
-        <div class="field"><label for="drf">من</label>${dPk('drf',drFrom)}</div>
-        <div class="field"><label for="drt">إلى</label>${dPk('drt',drTo)}</div>
-      </div>
-      <div class="field"><label for="drDaySel">اليوم</label><select id="drDaySel"></select></div>
-      <div id="drNum"></div>
-      <div class="field drsearch"><input id="drq" type="search" autocomplete="off" placeholder="ابحث" value="${esc(drQ)}"></div>
-      <div id="drRes"></div>
+    <section class="drpage">
+      <div style="display:flex;gap:8px;align-items:stretch"><div class="field" style="min-width:0;flex:1"><input id="drq" type="search" autocomplete="off" aria-label="ابحث في المندوب" placeholder="ابحث: كود أو اسم الصنف أو الوزن" value="${esc(drQ)}"></div></div>
+      <div id="drTot"></div>
+      <div class="tbl-wrap stbl" id="drRes"></div>
     </section>`;
+  const rw=$('#drRepWrap');rw.innerHTML=`<span class="mdate"><select id="drRepSel" aria-label="المندوب">${drRepOpts()}</select></span>`;rw.hidden=false;rw.onchange=drChange;
+  const hw=$('#drMonthWrap');hw.onclick=drClick;hw.onchange=drChange;
   $('#main').onclick=drClick;$('#main').onchange=drChange;$('#main').oninput=drInput;$('#main').onpaste=null;
   if(!drDay&&!drFrom&&!drTo)drDay=drTodayIso();
   drRefresh();
@@ -2104,26 +2132,35 @@ function drMergedTable(ls,m){
   ls.forEach(l=>(l.items||[]).forEach(x=>{const k=String(x.item);const o=agg.get(k)||{item:k,q:0};o.q+=Number(x.q)||0;agg.set(k,o)}));
   let amt=0;
   const trs=[...agg.values()].map(o=>{const it=drItemOf(o.item);const nm=it?it.name:'';const pr=drPriceOf(o.item);const am=drAmt(o.q,pr);if(am!=null)amt+=am;return `<tr><td class="mono">${esc(o.item)}</td><td class="nm">${esc(nm)}</td><td class="big">${fmt(o.q)}</td><td>${m(pr)}</td><td class="big">${m(am)}</td></tr>`}).join('');
-  return {amt:Math.round(amt*100)/100,html:`<div class="drscroll"><table class="tbl drtab drwide drgold"><colgroup><col style="width:17%"><col style="width:29%"><col style="width:14%"><col style="width:17%"><col style="width:23%"></colgroup><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody>${trs}</tbody></table></div>`};
+  return {amt:Math.round(amt*100)/100,html:`<table class="tbl stc drtab"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody>${trs}</tbody></table>`};
 }
 function drResRender(){
   const box=$('#drRes');if(!box)return;
-  const rows=drAgg(drQ),all=r3(rows.reduce((a,r)=>a+r.q,0));
+  const rows=drAgg(drQ);let all=r3(rows.reduce((a,r)=>a+r.q,0));
   const searching=!!drQ.trim(),m=v=>v==null?'—':money(v);
   let amtTot=0,body;
+  // one order block: its own table, with the same columns as the normal order view
+  const orderHtml=(ls)=>{const t=drMergedTable(ls,m);amtTot+=t.amt;return t.html};
   if(searching){
-    const nb=$('#drNum');if(nb)nb.innerHTML='';
-    const lr=drLoadRows(drQ).map(r=>({...r,price:drPriceOf(r.item)}));
-    lr.forEach(r=>{r.amt=drAmt(r.q,r.price);if(r.amt!=null)amtTot+=r.amt});
-    body=lr.length?`<div class="drscroll"><table class="tbl drtab drwide drgold"><thead><tr><th>التاريخ</th><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody>${lr.map(r=>`<tr><td class="mono drdate"><span class="drdy"><span class="drdb">${esc(drDayName(r.date))}</span><span class="drdb">${toDisp(r.date)}</span></span><div class="hint" style="margin:0">التحميل ${DR_ORD[r.n-1]||('#'+r.n)}</div></td><td class="mono">${esc(r.item)}</td><td class="nm">${esc(r.name)}</td><td class="big">${fmt(r.q)}</td><td>${m(r.price)}</td><td class="big">${m(r.amt)}</td></tr>`).join('')}</tbody></table></div>`
-      :`<div class="lines"><div class="empty">ما فيه صنف بهذا البحث.</div></div>`;
+    const nb=$('#drApply');if(nb)nb.innerHTML='';
+    const qs=drQ.trim(),v=wq(qs),toks=v.split(' ').filter(Boolean);
+    const scope=dloads.filter(l=>Number(l.rep)===drRep&&(drDay?l.date===drDay:drIn(l))).sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));
+    // a load shows when its order number matches (all its items) or when some of its items match
+    const shown=[];
+    for(const l of scope){
+      const bySab=String(l.sab||'').includes(qs);
+      const items=bySab?(l.items||[]):(l.items||[]).filter(x=>drQMatch(v,toks,x));
+      if(items.length)shown.push({...l,items});
+    }
+    all=r3(shown.reduce((a,l)=>a+drLQ(l),0));
+    const days=[...new Set(shown.map(l=>l.date))];
+    body=days.length?days.map(d=>{const ls=shown.filter(l=>l.date===d);return `<div class="drload-block"><div class="drhead"><b>${toDisp(d).slice(0,5)}<span style="display:inline-block;width:10px"></span>(${fmt(r3(ls.reduce((a,l)=>a+drLQ(l),0)))} كرتون)</b></div><div class="drhead"><span class="drnum">رقم الأوردر: <b>${esc(drSabs(ls))}</b></span><button class="btn sm" type="button" data-dredit="${esc(ls[ls.length-1].id)}">تعديل</button></div>${orderHtml(ls)}</div>`}).join(''):`<div class="lines"><div class="empty">ما فيه صنف أو أوردر بهذا البحث.</div></div>`;
   }else{
     const lsP=dloads.filter(l=>Number(l.rep)===drRep&&(drDay?l.date===drDay:drIn(l))).sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));
-    const numBox=$('#drNum');
-    const orderHtml=(ls)=>{const t=drMergedTable(ls,m);amtTot+=t.amt;return t.html};
+    const numBox=$('#drApply');
     if(drDay){
       if(lsP.length){
-        if(numBox)numBox.innerHTML=`<div class="drhead"><span class="drnum">رقم الأوردر: <b>${esc(drSabs(lsP))}</b></span><button class="btn sm" type="button" data-dredit="${esc(lsP[lsP.length-1].id)}">تعديل</button></div>`;
+        if(numBox)numBox.innerHTML=`<span class="hint">رقم الأوردر: <b>${esc(drSabs(lsP))}</b></span><button class="btn ap" type="button" data-dredit="${esc(lsP[lsP.length-1].id)}">تعديل</button>`;
         body=orderHtml(lsP);
       }else{
         if(numBox)numBox.innerHTML='';
@@ -2136,7 +2173,7 @@ function drResRender(){
     }
   }
   amtTot=Math.round(amtTot*100)/100;
-  box.innerHTML=`<div class="drpair"><div class="drtot"><span>المجموع</span><b>${fmt(all)} ك</b></div><div class="drtot"><span>مبلغ الأوردر</span><b>${m(amtTot)}</b></div></div>`+body;
+  const tot=$('#drTot');if(tot)tot.innerHTML=`<div class="stkg g2"><div><span>المجموع</span><b>${fmt(all)} ك</b></div><div><span>مبلغ الأوردر</span><b>${m(amtTot)}</b></div></div>`;box.innerHTML=body;
 }
 async function drSave(){
   drGridSync();
