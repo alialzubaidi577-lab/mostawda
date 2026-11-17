@@ -866,6 +866,8 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .tbl.simt.drtab th:nth-child(5),.tbl.simt.drtab td:nth-child(5){width:20%}
 .drpage{display:flex;flex-direction:column;gap:8px;padding-top:8px}
 .drmw{flex-wrap:wrap}
+.drmw.nomd .mdate{display:none}
+#drPrev>.pprev{max-height:none;overflow-x:auto}
 .drmw .applybar{flex:1 1 100%}
 .drmw .mdate select{flex:1 1 auto;min-width:0;max-width:none;border-radius:0 10px 10px 0}
 .tbl.stc.drtab th{white-space:normal;word-break:keep-all;line-height:1.25}
@@ -1814,7 +1816,7 @@ function render(){
   $('#vTitle').textContent=V.t;try{document.title=view==='home'?'إدارة المستودع':V.t}catch(_){}$('#back').hidden=view==='home';
   $('#whDateWrap').hidden=view!=='wh'&&view!=='result';
   const upTo=upTarget();$('#up').hidden=!upTo;if(upTo)$('#up').textContent='→ '+VIEWS[upTo].t;
-  $('#custBtn').hidden=!V.cust;$('#searchForm').hidden=!V.search;$('#monthWrap').hidden=!V.month;$('#drMonthWrap').hidden=view!=='drlog';$('#drRepWrap').hidden=view!=='drlog';if(view!=='drlog')$('#drRepWrap').innerHTML='';$('#toListTop').hidden=view!=='ret';$('#applyBar').hidden=view!=='stock';if(view==='stock')$('#applyBar').innerHTML=applyBarHtml();$('#toResTop').hidden=view!=='wh';$('#newRetTop').hidden=view!=='retlist';if(V.month)drawMonth();
+  $('#custBtn').hidden=!V.cust;$('#searchForm').hidden=!V.search;$('#monthWrap').hidden=!V.month;const dv=view==='drlog'||view==='drpaste';$('#drMonthWrap').hidden=!dv;$('#drRepWrap').hidden=!dv;if(!dv)$('#drRepWrap').innerHTML='';if(!dv||view==='drlog')$('#drApply').innerHTML='';$('#toListTop').hidden=view!=='ret';$('#applyBar').hidden=view!=='stock';if(view==='stock')$('#applyBar').innerHTML=applyBarHtml();$('#toResTop').hidden=view!=='wh';$('#newRetTop').hidden=view!=='retlist';if(V.month)drawMonth();
   if(view==='items'&&!$('#q').value)ilq='';$('#q').placeholder=view==='items'?'ابحث بالاسم أو الكود أو الوزن (12 جرام)':'باركود، رقم الصنف أو جزء من الاسم';
   setCust(cust);
   const m=$('#main');
@@ -2000,19 +2002,16 @@ function renderDrHub(){
 function renderDrPaste(){
   $('#bandBA').hidden=true;
   if(!drDate)drDate=drTodayIso();
+  const rw=$('#drRepWrap');rw.innerHTML=`<span class="mdate"><select id="drRepSel" aria-label="المندوب">${drRepOpts()}</select></span>`;rw.hidden=false;rw.onchange=drChange;
+  const hw=$('#drMonthWrap');hw.hidden=false;hw.classList.add('nomd');hw.onclick=drClick;hw.onchange=drChange;
+  $('#drApply').innerHTML=drEditId?`<span class="hint">تعديل تحميل محفوظ</span><button class="btn" type="button" data-drcancel>إلغاء</button>`:'';
   $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>
-    <section class="drbox">
-      <div class="drrow">
-        <div class="field"><label for="drRepSel">المندوب</label><select id="drRepSel">${drRepOpts()}</select></div>
-        <div class="field"><label for="drd">تاريخ التحميل</label>${dPk('drd',drDate)}</div>
-      </div>
-      <div class="drrow">
-        <div class="field"><label for="drSab">رقم التحميل (من الساب)</label><input id="drSab" type="text" autocomplete="off" inputmode="numeric" value="${esc(drSab)}" placeholder="اكتب الرقم من الساب"></div>
-      </div>
-      ${drEditId?`<p class="hint"><b>تعديل تحميل محفوظ</b> · الترحيل يستبدل النسخة القديمة</p><div class="drbtns"><button class="btn ghost" type="button" data-drcancel>إلغاء التعديل</button></div>`:''}
+    <section class="drpage">
+      <div class="field"><label for="drd">تاريخ التحميل</label>${dPk('drd',drDate)}</div>
+      <div class="field"><label for="drSab">رقم التحميل (من الساب)</label><input id="drSab" type="text" autocomplete="off" inputmode="numeric" value="${esc(drSab)}" placeholder="اكتب الرقم من الساب"></div>
       <textarea id="drTxt" hidden></textarea>
+      <div class="stkg g2"><div><span>المجموع</span><b id="drTotV">0 ك</b></div><div><span>مبلغ الأوردر</span><b id="drAmtV">0.00</b></div></div>
       <div id="drPrev">${drGridHtml()}</div>
-      <div class="drpair"><div class="drtot"><span>المجموع</span><b id="drTotV">0 ك</b></div><div class="drtot"><span>مبلغ الأوردر</span><b id="drAmtV">0.00</b></div></div>
       <div class="drbtns"><button class="btn ap" type="button" data-drsave>ترحيل</button><button class="btn" type="button" data-drclr>حذف</button></div>
     </section>`;
   $('#main').onclick=drClick;$('#main').onchange=drChange;$('#main').oninput=drInput;$('#main').onpaste=drPaste;
@@ -2027,7 +2026,7 @@ function renderDrLog(){
       <div class="tbl-wrap stbl" id="drRes"></div>
     </section>`;
   const rw=$('#drRepWrap');rw.innerHTML=`<span class="mdate"><select id="drRepSel" aria-label="المندوب">${drRepOpts()}</select></span>`;rw.hidden=false;rw.onchange=drChange;
-  const hw=$('#drMonthWrap');hw.onclick=drClick;hw.onchange=drChange;
+  const hw=$('#drMonthWrap');hw.classList.remove('nomd');hw.onclick=drClick;hw.onchange=drChange;
   $('#main').onclick=drClick;$('#main').onchange=drChange;$('#main').oninput=drInput;$('#main').onpaste=null;
   if(!drDay&&!drFrom&&!drTo)drDay=drTodayIso();
   drRefresh();
