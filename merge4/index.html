@@ -2012,7 +2012,7 @@ function renderDrPaste(){
       <textarea id="drTxt" hidden></textarea>
       <div class="stkg g2"><div><span>المجموع</span><b id="drTotV">0 ك</b></div><div><span>مبلغ الأوردر</span><b id="drAmtV">0.00</b></div></div>
       <div id="drPrev">${drGridHtml()}</div>
-      <div class="drbtns"><button class="btn ap" type="button" data-drsave>ترحيل</button><button class="btn" type="button" data-drclr>حذف</button></div>
+      <div class="drbtns"><button class="btn ap" type="button" data-drsave>ترحيل</button>${drEditId?'<button class="btn" type="button" data-drdelsaved>حذف التحميل</button>':'<button class="btn" type="button" data-drclr>حذف</button>'}</div>
     </section>`;
   $('#main').onclick=drClick;$('#main').onchange=drChange;$('#main').oninput=drInput;$('#main').onpaste=drPaste;
   drPrevRender();
@@ -2198,6 +2198,12 @@ function drLoadList(){
 }
 async function drClick(e){
   if(e.target.closest('[data-drsave]'))return drSave();
+  if(e.target.closest('[data-drdelsaved]')){
+    if(!drEditId)return;
+    if(!confirm('تحذف هذا التحميل نهائياً؟'))return;
+    try{await store.del('dloads',drEditId);drEditId=null;drSab='';drGrid=[{c:'',q:''}];toast('انحذف التحميل');go('drlog')}catch(_){toast('ما انحذف، حاول مرة ثانية')}
+    return
+  }
   if(e.target.closest('[data-drclr]')){drGrid=[{c:'',q:''}];renderDrPaste();toast('انحذفت اللصقة');return}
   if(e.target.closest('[data-drcancel]')){drEditId=null;drSab='';drGrid=[{c:'',q:''}];go('drlog');return}
   const ed=e.target.closest('[data-dredit]');
