@@ -1614,7 +1614,7 @@ const VIEWS={
   reps:{t:'المناديب',c:'--t-exp'},
   swap:{t:'تصحيح النكهات',c:'--t-wh'},
   load:{t:'تحميل المندوب',c:'--t-exp'},
-  drload:{t:'تحميل المناديب',c:'--t-exp'},drpaste:{t:'الصق الأوردر',c:'--t-exp'},drlog:{t:'السجل',c:'--t-exp'},
+  drload:{t:'تحميل المناديب',c:'--t-exp'},drpaste:{t:'الصق الأوردر',c:'--t-exp'},drlog:{t:'السجل',c:'--t-exp'},drnear:{t:'الأصناف القريبة',c:'--t-exp'},
   customers:{t:'العملاء'},
   audit:{t:'السجل'},
   monitor:{t:'مراقبة المخزون'},
@@ -1788,13 +1788,13 @@ $('#clist').addEventListener('click',e=>{const b=e.target.closest('.copt');if(!b
 async function saveCustPref(){if(!db||!myId)return;try{await db.collection('data/users/'+myId).doc('prefs').set({cust:cust||null,at:Date.now()})}catch(e){}}
 // ---------- navigation ----------
 function show(v){if(v!=='ret'&&typeof retDraft!=='undefined')retDraft=[];if(v!=='ret')retEditKey=null;if(!VIEWS[v])v='home';if(v!=='retlist'&&v!=='wh')retFrom=null;if(v!=='ret')retAddFrom=null;if(v==='ret'&&view!=='ret'&&view!=='retlist'){setCust(null);retDate=null}if(v==='ret'&&view==='retlist'){setCust(null);retDate=null}view=v;logFilter='';current=null;editing=null;editEntry=null;$('#q').value='';status('');closeSheet();render();if(v==='ret')setTimeout(()=>{if(view==='ret'&&!current?.item)retRender(RET_BLANK,'كرتون',false)},30);if(!(window.keepScrollUntil&&Date.now()<window.keepScrollUntil))window.scrollTo(0,0)}
-function go(v){if(v==='result')PARENT.result=view==='wh'?'wh':'inv';const h=v==='home'?'':v;let ok=false;
+function go(v){if(v==='result')PARENT.result=view==='wh'?'wh':'inv';if(v==='near')PARENT.near=view==='drnear'?'drnear':'dhub';const h=v==='home'?'':v;let ok=false;
   try{if(location.hash.slice(1)!==h){if(h)location.hash=h;else history.pushState(null,'',location.pathname+location.search);ok=!!h||true}}catch(e){}
   show(v)}
 let navDepth=0;
 window.addEventListener('hashchange',()=>{const v=location.hash.slice(1)||'home';if(v!==view)show(v)});
 window.addEventListener('popstate',()=>{const v=location.hash.slice(1)||'home';if(v!==view)show(v)});
-const PARENT={stkdates:'stock',near:'dhub',dates:'dhub',retlist:'ret',stock:'inv',wh:'inv',result:'inv',stockup:'inv',report:'inv',reps:'near',load:'reps',swap:'inv',drload:'dhub',drpaste:'drload',drlog:'drload'};
+const PARENT={stkdates:'stock',near:'dhub',dates:'dhub',retlist:'ret',stock:'inv',wh:'inv',result:'inv',stockup:'inv',report:'inv',reps:'near',load:'reps',swap:'inv',drload:'dhub',drpaste:'drload',drlog:'drload',drnear:'drlog'};
 $('#back').addEventListener('click',()=>go('home'));
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||view!=='issues'||!/قريب/.test(b.textContent))return;const row=e.target.closest('[data-iid]');window.nearBackIssue=row?row.dataset.iid:(b.dataset.goissue||null);const iss=issues.find(x=>x.id===window.nearBackIssue);const code=iss?iss.item:null;
   if(code){nearPick=code;nearPickName=iss.name||code;setTimeout(()=>focusRow(()=>{const set=[];document.querySelectorAll('.dcode').forEach(e=>{if(e.textContent.trim()===code)set.push(e.closest('tr')||e)});document.querySelectorAll('[data-goref],[data-retopen],tr[data-id],.stk.trow[data-id],.acti').forEach(el=>{if(el.textContent.includes(code)&&!set.includes(el))set.push(el)});return set.slice(0,4)},10000),400)}},true);
@@ -1846,7 +1846,7 @@ function render(){
   if(view==='audit')return renderAudit();
   if(view==='monitor'||view==='report')return renderMonitor();
   if(view==='issues')return renderIssues();
-  if(view==='dates')return renderDates();if(view==='stkdates')return renderStockDates();
+  if(view==='drnear')return renderDrNearPage();if(view==='dates')return renderDates();if(view==='stkdates')return renderStockDates();
   $('#bandBA').hidden=true;
   if(view==='ret'&&!retDate)retDate=iso(Date.now()).startsWith(ym)?iso(Date.now()):ym+'-01';
   if((view==='wh'||view==='result')&&!whDate)whDate=iso(Date.now()).startsWith(ym)?iso(Date.now()):ym+'-01';
@@ -1951,7 +1951,40 @@ function distribute(rows,n){
 }
 let distOv={},distEdit=null;
 const NSRC={ret:'مرتجع',wh:'جرد',exp:'إكسباير',near:'تسجيل',nearx:'بضاعة قريبة'};
-function nearRows(days,src){return entries.filter(e=>e.expiry&&(e.type==='ret'||e.type==='wh'||e.type==='exp'||e.type==='near'||e.type==='nearx')&&(!src||src==='all'||src==='log'||e.type===src)).map(e=>({e,n:daysLeft(e.expiry)})).filter(x=>x.n!=null&&(days==null||x.n<=days)).sort((a,b)=>(b.e.at||0)-(a.e.at||0))}
+function nearRowsRaw(days,src){return entries.filter(e=>e.expiry&&(e.type==='ret'||e.type==='wh'||e.type==='exp'||e.type==='near'||e.type==='nearx')&&(!src||src==='all'||src==='log'||e.type===src)).map(e=>({e,n:daysLeft(e.expiry)})).filter(x=>x.n!=null&&(days==null||x.n<=days)).sort((a,b)=>(b.e.at||0)-(a.e.at||0))}
+// تحميل المناديب يخصم من التواريخ القريبة: الأقرب انتهاءً أولاً، وبس من اللي انسجل قبل تاريخ التحميل
+function dlConsume(){
+  const pool=nearRowsRaw(null,'all').map(({e})=>{const base=e.cartons??(e.unit==='كرتون'?e.qty:null);return {e,left:Number(base)||0,at:Number(e.at)||0}});
+  const byEntry=new Map();
+  const ls=[...dloads].sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));
+  for(const l of ls){
+    for(const y of l.items||[]){
+      let need=Number(y.q)||0;
+      const cands=pool.filter(p=>p.left>0&&String(p.e.item)===String(y.item)&&p.at<(Number(l.at)||0)).sort((a,b)=>String(a.e.expiry).localeCompare(String(b.e.expiry))||a.at-b.at);
+      for(const p of cands){if(need<=1e-9)break;const t=Math.min(p.left,need);p.left-=t;need-=t;byEntry.set(p.e.id,(byEntry.get(p.e.id)||0)+t)}
+    }
+  }
+  return {byEntry};
+}
+function nearRows(days,src){const C=dlConsume().byEntry;return nearRowsRaw(days,src).map(x=>{const c=C.get(x.e.id);if(!c)return x;const base=x.e.cartons??(x.e.unit==='كرتون'?x.e.qty:null);return {...x,e:{...x.e,cartons:Math.max(0,(Number(base)||0)-c)}}})}
+function renderDrNearPage(){
+  $('#bandBA').hidden=true;
+  $('#main').innerHTML=`<div id="banner" class="banner" hidden></div>${drNearHtml(drRep)}`;
+  $('#main').querySelectorAll('[data-nearitem]').forEach(td=>td.onclick=()=>{nearPick=td.dataset.nearitem;go('near')});
+}
+// جدول المندوب: المطلوب من التواريخ القريبة، والمحمّل، والباقي، والفرق، ورقم الأوردر لكل تحميل
+function drNearHtml(ri){
+  const {out}=distribute(nearRowsRaw(nearDays,nearSrc),repN);
+  const nm=esc(repNames[ri]||('مندوب '+(ri+1)));
+  const it=new Map();
+  const get=(item,name)=>{const k=String(item);let x=it.get(k);if(!x){x={item:k,name:name||'',need:0,exp:new Set()};it.set(k,x)}if(!x.name&&name)x.name=name;return x};
+  for(const x of out){if(!(x.sh[ri]>0))continue;const g=get(x.item,x.name);g.need+=x.sh[ri];g.exp.add(x.expiry)}
+  const mine=dloads.filter(l=>Number(l.rep)===ri).sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));
+  for(const l of mine)for(const y of l.items||[])get(y.item,y.name);
+  const rows=[...it.values()].map(g=>{let L=0;const ords=[];for(const l of mine)for(const y of l.items||[])if(String(y.item)===g.item){const q=Number(y.q)||0;L+=q;ords.push(toDisp(l.date).slice(0,5)+' · '+esc(l.sab||'بدون رقم')+': <b>'+fmt(r3(q))+'</b>')}return {...g,L,ords}}).sort((a,b)=>a.item.localeCompare(b.item));
+  if(!rows.length)return `<div class="lines"><div class="empty">ما عند ${nm} أصناف قريبة.</div></div>`;
+  return `<div class="drnear"><div class="drhead"><b>الأصناف القريبة · ${nm}</b></div><div class="tbl-wrap stbl"><table class="tbl stc sdt" style="font-size:11px;table-layout:fixed;width:100%"><colgroup><col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:29%"></colgroup><thead><tr><th>الكود</th><th>الصنف</th><th>المطلوب</th><th>المحمّل</th><th>الباقي</th><th>الفرق</th><th>الأوردرات</th></tr></thead><tbody>${rows.map(g=>{const b=Math.max(0,r3(g.need-g.L)),f=Math.max(0,r3(g.L-g.need));return `<tr><td class="mono">${esc(g.item)}</td><td class="nm" data-nearitem="${esc(g.item)}" style="cursor:pointer">${esc(g.name)}${g.exp.size?`<br><small class="hint">${[...g.exp].sort().map(d=>toDisp(d)).join('، ')}</small>`:''}</td><td class="big">${fmt(r3(g.need))}</td><td class="big">${fmt(r3(g.L))}</td><td class="big">${fmt(b)}</td><td class="big">${f?'+'+fmt(f):'—'}</td><td style="font-size:10px;white-space:normal">${g.ords.join('<br>')||'—'}</td></tr>`}).join('')}</tbody></table></div></div>`;
+}
 let loadRep=null;
 function loadedMap(){const m=new Map();for(const l of loads)for(const x of l.items||[]){const k=l.rep+'|'+x.item+'|'+x.expiry;m.set(k,(m.get(k)||0)+(Number(x.q)||0))}return m}
 function loadedLast(){const m=new Map();for(const l of [...loads].sort((a,b)=>a.at-b.at))for(const x of l.items||[])m.set(l.rep+'|'+x.item+'|'+x.expiry,l.date);return m}
@@ -2105,11 +2138,12 @@ function drPaste(e){
 }
 function drRefresh(){
   if(view!=='drlog'||!$('#drDaySel'))return;
-  const sun=drSunIso(),week=[...Array(7).keys()].map(i=>{const d=new Date(sun+'T00:00:00');d.setDate(d.getDate()+i);return iso(d)});
+  const base=(drDay||drTodayIso()).slice(0,7),[yy,mm]=base.split('-').map(Number),last=new Date(yy,mm,0).getDate();
+  const monthDays=[...Array(last).keys()].map(i=>base+'-'+String(i+1).padStart(2,'0'));
   const withLoads=dloads.filter(l=>Number(l.rep)===drRep).map(l=>l.date);
-  const days=[...new Set([...week,...withLoads])].sort().reverse();
+  const days=[...new Set([...monthDays,...withLoads])].sort().reverse();
   const dayTot=d=>r3(dloads.filter(l=>Number(l.rep)===drRep&&l.date===d).reduce((a,l)=>a+drLQ(l),0));
-  $('#drDaySel').innerHTML='<option value="">كل الفترة</option>'+days.map(d=>{const t=dayTot(d);return `<option value="${d}"${drDay===d?' selected':''}>${drDayName(d)}&nbsp;&nbsp;${toDisp(d).slice(0,5)}&nbsp;&nbsp;&nbsp;&nbsp;${t?'('+fmt(t)+' كرتون)':'(بدون تحميل)'}</option>`}).join('');
+  $('#drDaySel').innerHTML='<option value="">كل الفترة</option>'+days.map(d=>{const t=dayTot(d);return `<option value="${d}"${drDay===d?' selected':''}>${drDayName(d)}&nbsp;&nbsp;${toDisp(d).slice(0,5)}&nbsp;&nbsp;&nbsp;&nbsp;${t?'('+fmt(t)+' كرتون)':''}</option>`}).join('');
   const q=$('#drq');if(q)q.placeholder='ابحث في '+(drDay?'هذا اليوم':'الفترة')+': كود أو جرام أو اسم';
   drResRender();
 }
@@ -2167,7 +2201,7 @@ function drResRender(){
     const numBox=$('#drApply');
     if(drDay){
       if(lsP.length){
-        if(numBox)numBox.innerHTML=`<span class="hint">رقم الأوردر: <b>${esc(drSabs(lsP))}</b></span><button class="btn ap" type="button" data-dredit="${esc(lsP[lsP.length-1].id)}">تعديل</button>`;
+        if(numBox)numBox.innerHTML=`<span class="hint">رقم الأوردر: <b>${esc(drSabs(lsP))}</b></span><button class="btn" type="button" data-nearx>الأصناف القريبة</button><button class="btn ap" type="button" data-dredit="${esc(lsP[lsP.length-1].id)}">تعديل</button>`;
         body=orderHtml(lsP);
       }else{
         if(numBox)numBox.innerHTML='';
@@ -2205,6 +2239,7 @@ function drLoadList(){
   return `<div class="drloads"><p class="hint"><b>التحميلات المحفوظة</b></p>${ls.map((l,k)=>`<div class="drlrow"><span>${toDisp(l.date)}${l.sab?' · الساب '+esc(l.sab):''} · التحميل ${DR_ORD[k]||('#'+(k+1))} · ${(l.items||[]).length} صنف</span><span><button class="btn ghost sm" type="button" data-dredit="${esc(l.id)}">تعديل</button> <button class="btn ghost sm" type="button" data-drdel="${esc(l.id)}">حذف</button></span></div>`).join('')}</div>`;
 }
 async function drClick(e){
+  if(e.target.closest('[data-nearx]')){go('drnear');return}
   if(e.target.closest('[data-drsave]'))return drSave();
   if(e.target.closest('[data-drdelrows]')){
     const sel=new Set([...document.querySelectorAll('[data-drsel]:checked')].map(x=>Number(x.dataset.drsel)));
