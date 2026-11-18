@@ -1978,9 +1978,9 @@ function drNearHtml(ri){
   const nm=esc(repNames[ri]||('مندوب '+(ri+1)));
   const it=new Map();
   const get=(item,name)=>{const k=String(item);let x=it.get(k);if(!x){x={item:k,name:name||'',need:0,exp:new Set()};it.set(k,x)}if(!x.name&&name)x.name=name;return x};
-  for(const x of out){if(!(x.sh[ri]>0))continue;const g=get(x.item,x.name);g.need+=x.sh[ri];g.exp.add(x.expiry)}
   const mine=dloads.filter(l=>Number(l.rep)===ri).sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));
-  for(const l of mine)for(const y of l.items||[])get(y.item,y.name);
+  const loaded=new Set(mine.flatMap(l=>(l.items||[]).map(y=>String(y.item))));
+  for(const x of out){if(!(x.sh[ri]>0)&&!loaded.has(String(x.item)))continue;const g=get(x.item,x.name);g.need+=x.sh[ri]||0;g.exp.add(x.expiry)}
   const rows=[...it.values()].map(g=>{let L=0;const ords=[];for(const l of mine)for(const y of l.items||[])if(String(y.item)===g.item){const q=Number(y.q)||0;L+=q;ords.push(toDisp(l.date).slice(0,5)+' · '+esc(l.sab||'بدون رقم')+': <b>'+fmt(r3(q))+'</b>')}return {...g,L,ords}}).sort((a,b)=>a.item.localeCompare(b.item));
   if(!rows.length)return `<div class="lines"><div class="empty">ما عند ${nm} أصناف قريبة.</div></div>`;
   return `<div class="drnear"><div class="drhead"><b>الأصناف القريبة · ${nm}</b></div><div class="tbl-wrap stbl"><table class="tbl stc sdt" style="font-size:11px;table-layout:fixed;width:100%"><colgroup><col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:29%"></colgroup><thead><tr><th>الكود</th><th>الصنف</th><th>المطلوب</th><th>المحمّل</th><th>الباقي</th><th>الفرق</th><th>الأوردرات</th></tr></thead><tbody>${rows.map(g=>{const b=Math.max(0,r3(g.need-g.L)),f=Math.max(0,r3(g.L-g.need));return `<tr><td class="mono">${esc(g.item)}</td><td class="nm" data-nearitem="${esc(g.item)}" style="cursor:pointer">${esc(g.name)}${g.exp.size?`<br><small class="hint">${[...g.exp].sort().map(d=>toDisp(d)).join('، ')}</small>`:''}</td><td class="big">${fmt(r3(g.need))}</td><td class="big">${fmt(r3(g.L))}</td><td class="big">${fmt(b)}</td><td class="big">${f?'+'+fmt(f):'—'}</td><td style="font-size:10px;white-space:normal">${g.ords.join('<br>')||'—'}</td></tr>`}).join('')}</tbody></table></div></div>`;
