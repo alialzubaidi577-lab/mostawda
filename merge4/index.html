@@ -866,6 +866,13 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .tbl.simt.drtab th:nth-child(5),.tbl.simt.drtab td:nth-child(5){width:20%}
 .drpage{display:flex;flex-direction:column;gap:8px;padding-top:8px}
 .drmw{flex-wrap:wrap}
+.tbl.drg th:nth-child(1),.tbl.drg td:nth-child(1){width:8%}
+.tbl.drg th:nth-child(2),.tbl.drg td:nth-child(2){width:17%}
+.tbl.drg th:nth-child(3),.tbl.drg td:nth-child(3){width:27%}
+.tbl.drg th:nth-child(4),.tbl.drg td:nth-child(4){width:12%}
+.tbl.drg th:nth-child(5),.tbl.drg td:nth-child(5){width:14%}
+.tbl.drg th:nth-child(6),.tbl.drg td:nth-child(6){width:22%}
+.tbl.drg td.drsel{text-align:center}
 .drmw.nomd .mdate{display:none}
 #drPrev>.pprev{max-height:none;overflow-x:auto}
 .drmw .applybar{flex:1 1 100%}
@@ -2012,7 +2019,7 @@ function renderDrPaste(){
       <textarea id="drTxt" hidden></textarea>
       <div class="stkg g2"><div><span>المجموع</span><b id="drTotV">0 ك</b></div><div><span>مبلغ الأوردر</span><b id="drAmtV">0.00</b></div></div>
       <div id="drPrev">${drGridHtml()}</div>
-      <div class="drbtns"><button class="btn ap" type="button" data-drsave>ترحيل</button>${drEditId?'<button class="btn" type="button" data-drdelsaved>حذف التحميل</button>':'<button class="btn" type="button" data-drclr>حذف</button>'}</div>
+      <div class="drbtns"><button class="btn ap" type="button" data-drsave>ترحيل</button><button class="btn" type="button" data-drdelrows>حذف المحدد</button>${drEditId?'<button class="btn" type="button" data-drdelsaved>حذف التحميل</button>':'<button class="btn" type="button" data-drclr>حذف</button>'}</div>
     </section>`;
   $('#main').onclick=drClick;$('#main').onchange=drChange;$('#main').oninput=drInput;$('#main').onpaste=drPaste;
   drPrevRender();
@@ -2033,13 +2040,13 @@ function renderDrLog(){
 }
 function drRowHtml(r,i){
   // نفس شكل لصق المخزون: الكود والكمية خانات تكتب فيها، والصنف والأسعار تجي من البيانات
-  return `<tr><td><input class="xc" inputmode="numeric" autocomplete="off" data-drc="${i}" value="${esc(r.c)}"></td><td class="nm"><span class="xv xn" data-drn="${i}"></span></td><td><input class="xc" inputmode="decimal" autocomplete="off" data-drq="${i}" value="${esc(r.q)}"></td><td><span class="xv" data-drp="${i}">—</span></td><td><span class="xv" data-dra="${i}">—</span></td></tr>`;
+  return `<tr><td class="drsel"><input type="checkbox" data-drsel="${i}" aria-label="تحديد الصنف"></td><td><input class="xc" inputmode="numeric" autocomplete="off" data-drc="${i}" value="${esc(r.c)}"></td><td class="nm"><span class="xv xn" data-drn="${i}"></span></td><td><input class="xc" inputmode="decimal" autocomplete="off" data-drq="${i}" value="${esc(r.q)}"></td><td><span class="xv" data-drp="${i}">—</span></td><td><span class="xv" data-dra="${i}">—</span></td></tr>`;
 }
 // نفس عدد الخانات الفاضية اللي يبينها لصق المخزون
 function drPad(){while(drGrid.length<12)drGrid.push({c:'',q:''})}
 function drGridHtml(){
   drPad();
-  return `<div class="tbl-wrap pprev"><table class="tbl ptpl xgrid drg"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody id="drGridBody">${drGrid.map(drRowHtml).join('')}</tbody></table></div><div id="drErr" class="drerr"></div>`;
+  return `<div class="tbl-wrap pprev"><table class="tbl ptpl xgrid drg"><thead><tr><th class="drsel-h"></th><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody id="drGridBody">${drGrid.map(drRowHtml).join('')}</tbody></table></div><div id="drErr" class="drerr"></div>`;
 }
 function drRowCheck(r){
   const c=toLatin(r.c||'').trim(),q=toLatin(r.q||'').trim();
@@ -2127,10 +2134,11 @@ function drPriceOf(code){const it=drItemOf(code);const v=it?.price?.['كاشفا
 function drAmt(q,price){return price==null?null:Math.round(q*price*DR_VAT*100)/100}
 function drSabs(ls){return [...new Set(ls.map(l=>l.sab).filter(Boolean))].join('، ')||'بدون رقم'}
 function drMergedTable(ls,m){
-  const agg=new Map();
-  ls.forEach(l=>(l.items||[]).forEach(x=>{const k=String(x.item);const o=agg.get(k)||{item:k,q:0};o.q+=Number(x.q)||0;agg.set(k,o)}));
+  // كل إدخال يطلع سطر لحاله (ما يتجمع مع نفس الصنف)
+  const rowsIn=[];
+  ls.forEach(l=>(l.items||[]).forEach(x=>rowsIn.push({item:String(x.item),q:Number(x.q)||0})));
   let amt=0;
-  const trs=[...agg.values()].map(o=>{const it=drItemOf(o.item);const nm=it?it.name:'';const pr=drPriceOf(o.item);const am=drAmt(o.q,pr);if(am!=null)amt+=am;return `<tr><td class="mono">${esc(o.item)}</td><td class="nm">${esc(nm)}</td><td class="big">${fmt(o.q)}</td><td>${m(pr)}</td><td class="big">${m(am)}</td></tr>`}).join('');
+  const trs=rowsIn.map(o=>{const it=drItemOf(o.item);const nm=it?it.name:'';const pr=drPriceOf(o.item);const am=drAmt(o.q,pr);if(am!=null)amt+=am;return `<tr><td class="mono">${esc(o.item)}</td><td class="nm">${esc(nm)}</td><td class="big">${fmt(o.q)}</td><td>${m(pr)}</td><td class="big">${m(am)}</td></tr>`}).join('');
   return {amt:Math.round(amt*100)/100,html:`<table class="tbl stc drtab"><thead><tr><th>الكود</th><th>الصنف</th><th>الكمية</th><th>سعر الكرتون</th><th>المجموع مع الضريبة</th></tr></thead><tbody>${trs}</tbody></table>`};
 }
 function drResRender(){
@@ -2198,6 +2206,13 @@ function drLoadList(){
 }
 async function drClick(e){
   if(e.target.closest('[data-drsave]'))return drSave();
+  if(e.target.closest('[data-drdelrows]')){
+    const sel=new Set([...document.querySelectorAll('[data-drsel]:checked')].map(x=>Number(x.dataset.drsel)));
+    if(!sel.size){toast('حدد صنف أو أكثر');return}
+    drGrid=drGrid.filter((r,i)=>!sel.has(i));drPad();
+    const body=$('#drGridBody');if(body)body.innerHTML=drGrid.map(drRowHtml).join('');
+    drGridEnsure();drPrevRender();toast('انحذف '+sel.size+' صنف، اضغط ترحيل للحفظ');return
+  }
   if(e.target.closest('[data-drdelsaved]')){
     if(!drEditId)return;
     if(!confirm('تحذف هذا التحميل نهائياً؟'))return;
