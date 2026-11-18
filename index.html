@@ -1979,17 +1979,17 @@ function drNearHtml(ri){
   const it=new Map();
   const get=(item,name)=>{const k=String(item);let x=it.get(k);if(!x){x={item:k,name:name||'',need:0,exp:new Set()};it.set(k,x)}if(!x.name&&name)x.name=name;return x};
   const mine=dloads.filter(l=>Number(l.rep)===ri).sort((a,b)=>String(a.date).localeCompare(String(b.date))||(a.at||0)-(b.at||0));
-  const loaded=new Set(mine.flatMap(l=>(l.items||[]).map(y=>String(y.item))));
-  for(const x of out){if(!(x.sh[ri]>0)&&!loaded.has(String(x.item)))continue;const g=get(x.item,x.name);g.need+=x.sh[ri]||0;g.exp.add(x.expiry)}
+  for(const x of out){if(!(x.sh[ri]>0))continue;const g=get(x.item,x.name);g.need+=x.sh[ri]||0;g.exp.add(x.expiry)}
   const rows=[...it.values()].map(g=>{let L=0;const ords=[];for(const l of mine)for(const y of l.items||[])if(String(y.item)===g.item){const q=Number(y.q)||0;L+=q;ords.push(toDisp(l.date).slice(0,5)+' · '+esc(l.sab||'بدون رقم')+': <b>'+fmt(r3(q))+'</b>')}return {...g,L,ords}}).sort((a,b)=>a.item.localeCompare(b.item));
   if(!rows.length)return `<div class="lines"><div class="empty">ما عند ${nm} أصناف قريبة.</div></div>`;
-  return `<div class="drnear"><div class="drhead"><b>الأصناف القريبة · ${nm}</b></div><div class="tbl-wrap stbl"><table class="tbl stc sdt" style="font-size:11px;table-layout:fixed;width:100%"><colgroup><col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:29%"></colgroup><thead><tr><th>الكود</th><th>الصنف</th><th>المطلوب</th><th>المحمّل</th><th>الباقي</th><th>الفرق</th><th>الأوردرات</th></tr></thead><tbody>${rows.map(g=>{const b=Math.max(0,r3(g.need-g.L)),f=Math.max(0,r3(g.L-g.need));return `<tr><td class="mono">${esc(g.item)}</td><td class="nm" data-nearitem="${esc(g.item)}" style="cursor:pointer">${esc(g.name)}${g.exp.size?`<br><small class="hint">${[...g.exp].sort().map(d=>toDisp(d)).join('، ')}</small>`:''}</td><td class="big">${fmt(r3(g.need))}</td><td class="big">${fmt(r3(g.L))}</td><td class="big">${fmt(b)}</td><td class="big">${f?'+'+fmt(f):'—'}</td><td style="font-size:10px;white-space:normal">${g.ords.join('<br>')||'—'}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  return `<div class="drnear"><div class="drhead"><b>الأصناف القريبة · ${nm}</b></div><div class="tbl-wrap stbl"><table class="tbl stc sdt" style="font-size:11px;table-layout:fixed;width:100%"><colgroup><col style="width:12%"><col style="width:20%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:29%"></colgroup><thead><tr><th>الكود</th><th>الصنف</th><th>المطلوب</th><th>المحمّل</th><th>الباقي</th><th>الفرق</th><th>الأوردرات</th></tr></thead><tbody>${rows.map(g=>{const b=Math.max(0,r3(g.need-g.L)),f=Math.max(0,r3(g.L-g.need));return `<tr><td class="mono">${esc(g.item)}</td><td class="nm" data-nearitem="${esc(g.item)}" style="cursor:pointer">${esc(g.name)}${g.exp.size?`<br><small class="hint">${[...g.exp].sort().map(d=>toDisp(d)).join('، ')}</small>`:''}</td><td class="big">${fmt(r3(g.need))}</td><td class="big" style="color:#e67e22">${fmt(r3(g.L))}</td><td class="big">${fmt(b)}</td><td class="big">${f?'+'+fmt(f):'—'}</td><td style="font-size:10px;white-space:normal">${g.ords.join('<br>')||'—'}</td></tr>`}).join('')}</tbody></table></div></div>`;
 }
 let loadRep=null;
 function loadedMap(){const m=new Map();for(const l of loads)for(const x of l.items||[]){const k=l.rep+'|'+x.item+'|'+x.expiry;m.set(k,(m.get(k)||0)+(Number(x.q)||0))}return m}
 function loadedLast(){const m=new Map();for(const l of [...loads].sort((a,b)=>a.at-b.at))for(const x of l.items||[])m.set(l.rep+'|'+x.item+'|'+x.expiry,l.date);return m}
 let loadDate=null;
 let dloads=[];let drRep=0,drQ='',drPq='',drFrom='',drTo='',drText='',drGrid=[{c:'',q:''}],drDate=null,drDel=null,drEntryRep=0,drDay='',drSab='',drEditId=null;const drOpen=new Set();
+try{const s0=JSON.parse(localStorage.getItem('drState')||'null');if(s0){drRep=Number(s0.rep)||0;drDay=s0.day||'';drFrom=s0.from||'';drTo=s0.to||'';drEntryRep=drRep}}catch(_){}
 // ---------- تحميل المناديب: صفحة مستقلة، كود + كمية، ما تخصم من الاستوك ----------
 const r3=v=>Math.round(v*1000)/1000;
 const drTodayIso=()=>iso(Date.now()),drYestIso=()=>iso(Date.now()-864e5);
@@ -2137,6 +2137,7 @@ function drPaste(e){
   drGridEnsure();drPrevRender();
 }
 function drRefresh(){
+  try{localStorage.setItem('drState',JSON.stringify({rep:drRep,day:drDay,from:drFrom,to:drTo}))}catch(_){}
   if(view!=='drlog'||!$('#drDaySel'))return;
   const base=(drDay||drTodayIso()).slice(0,7),[yy,mm]=base.split('-').map(Number),last=new Date(yy,mm,0).getDate();
   const monthDays=[...Array(last).keys()].map(i=>base+'-'+String(i+1).padStart(2,'0'));
@@ -2204,11 +2205,11 @@ function drResRender(){
         if(numBox)numBox.innerHTML=`<span class="hint">رقم الأوردر: <b>${esc(drSabs(lsP))}</b></span><button class="btn" type="button" data-nearx>الأصناف القريبة</button><button class="btn ap" type="button" data-dredit="${esc(lsP[lsP.length-1].id)}">تعديل</button>`;
         body=orderHtml(lsP);
       }else{
-        if(numBox)numBox.innerHTML='';
+        if(numBox)numBox.innerHTML=`<button class="btn" type="button" data-nearx>الأصناف القريبة</button>`;
         body=`<div class="lines"><div class="empty">ما فيه تحميل في هذا اليوم.</div></div>`;
       }
     }else{
-      if(numBox)numBox.innerHTML='';
+      if(numBox)numBox.innerHTML=`<button class="btn" type="button" data-nearx>الأصناف القريبة</button>`;
       const days=[...new Set(lsP.map(l=>l.date))];
       body=days.length?days.map(d=>{const ls=lsP.filter(l=>l.date===d);return `<div class="drload-block"><div class="drhead"><b>${toDisp(d).slice(0,5)}<span style="display:inline-block;width:10px"></span>(${fmt(r3(ls.reduce((a,l)=>a+drLQ(l),0)))} كرتون)</b></div><div class="drhead"><span class="drnum">رقم الأوردر: <b>${esc(drSabs(ls))}</b></span><button class="btn sm" type="button" data-dredit="${esc(ls[ls.length-1].id)}">تعديل</button></div>${orderHtml(ls)}</div>`}).join(''):`<div class="lines"><div class="empty">ما فيه تحميل في هذي الفترة.</div></div>`;
     }
